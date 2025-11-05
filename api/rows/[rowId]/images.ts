@@ -1,4 +1,5 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
+import { storage } from '../../../server/storage';
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   // Set CORS headers
@@ -15,8 +16,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const { rowId } = req.query;
     
     if (req.method === 'GET') {
-      // Return mock images for the row
-      return res.json([]);
+      // Get images for this row from database
+      const images = await storage.getImagesByRow(rowId as string);
+      return res.json(images);
     }
 
     return res.status(405).json({ error: 'Method not allowed' });

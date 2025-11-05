@@ -1,4 +1,5 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
+import { storage } from '../../../server/storage';
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   // Set CORS headers
@@ -15,17 +16,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const { pageId } = req.query;
     
     if (req.method === 'GET') {
-      // Return mock rows for the page
-      return res.json([
-        {
-          id: '1',
-          pageId: pageId,
-          title: 'Sample Row',
-          order: 0,
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString()
-        }
-      ]);
+      // Get rows for this page from database
+      const rows = await storage.getRowsByPage(pageId as string);
+      return res.json(rows);
     }
 
     return res.status(405).json({ error: 'Method not allowed' });

@@ -1,4 +1,7 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
+import { storage } from '../../server/storage';
+import { updateRowSchema } from '../../shared/schema';
+import { z } from 'zod';
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   // Set CORS headers
@@ -15,32 +18,27 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const { rowId } = req.query;
     
     if (req.method === 'GET') {
-      // Return mock row data
-      return res.json({
-        id: rowId,
-        pageId: '1',
-        title: 'Sample Row',
-        order: 0,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString()
-      });
+      // Get row from database
+      const row = await storage.getRow(rowId as string);
+      if (!row) {
+        return res.status(404).json({ error: 'Row not found' });
+      }
+      return res.json(row);
     }
     
     if (req.method === 'PATCH') {
-      // Update row
-      const { title } = req.body;
-      return res.json({
-        id: rowId,
-        pageId: '1',
-        title: title || 'Updated Row',
-        order: 0,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString()
-      });
+      // Update row in database
+      const data = updateRowSchema.parse(req.body);
+      const row = await storage.updateRow(rowId as string, data);
+      if (!row) {
+        return res.status(404).json({ error: 'Row not found' });
+      }
+      return res.json(row);
     }
     
     if (req.method === 'DELETE') {
-      // Delete row
+      // Delete row from database
+      await storage.deleteRow(rowId as string);
       return res.status(204).end();
     }
 
@@ -48,6 +46,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     
   } catch (error) {
     console.error('Individual Row API Error:', error);
+    if (error instanceof z.ZodError) {
+      return res.status(400).json({ error: "Invalid data", details: error.errors });
+    }
     return res.status(500).json({ error: 'Internal server error', details: String(error) });
   }
 }
