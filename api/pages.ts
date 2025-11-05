@@ -1,7 +1,9 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { storage } from '../server/storage';
-import { insertPageSchema } from '../shared/schema';
-import { z } from 'zod';
+
+// Simple in-memory storage for demo purposes
+let pages = [
+  { id: '1', name: 'Default Page', order: 0, createdAt: '2025-11-05T10:00:00.000Z', updatedAt: '2025-11-05T10:00:00.000Z' }
+];
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   // Set CORS headers
@@ -16,25 +18,28 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
   try {
     if (req.method === 'GET') {
-      // Get all pages from database
-      const pages = await storage.getAllPages();
+      // Return all pages
       return res.json(pages);
     }
     
     if (req.method === 'POST') {
-      // Create new page in database
-      const data = insertPageSchema.omit({ order: true }).parse(req.body);
-      const page = await storage.createPage(data);
-      return res.status(201).json(page);
+      // Create new page
+      const { name } = req.body;
+      const newPage = {
+        id: Date.now().toString(),
+        name: name || 'New Page',
+        order: pages.length,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
+      };
+      pages.push(newPage);
+      return res.status(201).json(newPage);
     }
 
     return res.status(405).json({ error: 'Method not allowed' });
     
   } catch (error) {
     console.error('Pages API Error:', error);
-    if (error instanceof z.ZodError) {
-      return res.status(400).json({ error: "Invalid data", details: error.errors });
-    }
     return res.status(500).json({ error: 'Internal server error', details: String(error) });
   }
 }

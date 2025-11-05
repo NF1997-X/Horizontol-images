@@ -1,7 +1,7 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { storage } from '../server/storage';
-import { insertRowSchema } from '../shared/schema';
-import { z } from 'zod';
+
+// Simple in-memory storage for demo purposes
+let rows: any[] = [];
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   // Set CORS headers
@@ -16,19 +16,24 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
   try {
     if (req.method === 'POST') {
-      // Create new row in database
-      const data = insertRowSchema.omit({ order: true }).parse(req.body);
-      const row = await storage.createRow(data);
-      return res.status(201).json(row);
+      // Create new row
+      const { pageId, title } = req.body;
+      const newRow = {
+        id: Date.now().toString(),
+        pageId: pageId || '1',
+        title: title || 'New Row',
+        order: rows.filter(r => r.pageId === pageId).length,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
+      };
+      rows.push(newRow);
+      return res.status(201).json(newRow);
     }
 
     return res.status(405).json({ error: 'Method not allowed' });
     
   } catch (error) {
     console.error('Rows API Error:', error);
-    if (error instanceof z.ZodError) {
-      return res.status(400).json({ error: "Invalid data", details: error.errors });
-    }
     return res.status(500).json({ error: 'Internal server error', details: String(error) });
   }
 }
