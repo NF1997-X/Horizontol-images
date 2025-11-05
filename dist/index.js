@@ -204,7 +204,35 @@ var updateImageSchema = insertImageSchema.partial().pick({ url: true, title: tru
 // server/routes.ts
 import { z } from "zod";
 import { randomBytes } from "crypto";
+import multer from "multer";
+import fs from "fs";
+import path from "path";
 async function registerRoutes(app2) {
+  const uploadDir = path.resolve(process.cwd(), "uploads");
+  if (!fs.existsSync(uploadDir)) {
+    fs.mkdirSync(uploadDir, { recursive: true });
+  }
+  app2.use("/uploads", (await import("express")).default.static(uploadDir));
+  const storageEngine = multer.diskStorage({
+    destination: (_req, _file, cb) => {
+      cb(null, uploadDir);
+    },
+    filename: (_req, file, cb) => {
+      const ext = path.extname(file.originalname) || ".jpg";
+      const safeBase = path.basename(file.originalname, ext).replace(/[^a-zA-Z0-9_-]/g, "");
+      const unique = Date.now() + "-" + Math.round(Math.random() * 1e9);
+      cb(null, `${safeBase || "image"}-${unique}${ext}`);
+    }
+  });
+  const upload = multer({
+    storage: storageEngine,
+    fileFilter: (_req, file, cb) => {
+      if (file.mimetype.startsWith("image/")) cb(null, true);
+      else cb(new Error("Only image uploads are allowed"));
+    },
+    limits: { fileSize: 10 * 1024 * 1024 }
+    // 10MB
+  });
   app2.get("/api/pages", async (req, res) => {
     try {
       const pages2 = await storage.getAllPages();
@@ -367,6 +395,23 @@ async function registerRoutes(app2) {
       res.status(500).json({ error: "Failed to delete image" });
     }
   });
+  app2.post("/api/upload", upload.single("file"), async (req, res) => {
+    try {
+      if (!req.file) {
+        return res.status(400).json({ error: "No file uploaded" });
+      }
+      const relativeUrl = `/uploads/${req.file.filename}`;
+      return res.status(201).json({
+        url: relativeUrl,
+        filename: req.file.filename,
+        originalname: req.file.originalname,
+        size: req.file.size,
+        mimetype: req.file.mimetype
+      });
+    } catch (error) {
+      return res.status(500).json({ error: error?.message || "Failed to upload image" });
+    }
+  });
   app2.post("/api/share-links/:pageId", async (req, res) => {
     try {
       const pageId = req.params.pageId;
@@ -406,14 +451,14 @@ async function registerRoutes(app2) {
 
 // server/vite.ts
 import express from "express";
-import fs from "fs";
-import path2 from "path";
+import fs2 from "fs";
+import path3 from "path";
 import { createServer as createViteServer, createLogger } from "vite";
 
 // vite.config.ts
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
-import path from "path";
+import path2 from "path";
 import runtimeErrorOverlay from "@replit/vite-plugin-runtime-error-modal";
 var vite_config_default = defineConfig({
   plugins: [
@@ -430,14 +475,14 @@ var vite_config_default = defineConfig({
   ],
   resolve: {
     alias: {
-      "@": path.resolve(import.meta.dirname, "client", "src"),
-      "@shared": path.resolve(import.meta.dirname, "shared"),
-      "@assets": path.resolve(import.meta.dirname, "attached_assets")
+      "@": path2.resolve(import.meta.dirname, "client", "src"),
+      "@shared": path2.resolve(import.meta.dirname, "shared"),
+      "@assets": path2.resolve(import.meta.dirname, "attached_assets")
     }
   },
-  root: path.resolve(import.meta.dirname, "client"),
+  root: path2.resolve(import.meta.dirname, "client"),
   build: {
-    outDir: path.resolve(import.meta.dirname, "dist/public"),
+    outDir: path2.resolve(import.meta.dirname, "dist/public"),
     emptyOutDir: true
   },
   server: {
@@ -483,13 +528,13 @@ async function setupVite(app2, server) {
   app2.use("*", async (req, res, next) => {
     const url = req.originalUrl;
     try {
-      const clientTemplate = path2.resolve(
+      const clientTemplate = path3.resolve(
         import.meta.dirname,
         "..",
         "client",
         "index.html"
       );
-      let template = await fs.promises.readFile(clientTemplate, "utf-8");
+      let template = await fs2.promises.readFile(clientTemplate, "utf-8");
       template = template.replace(
         `src="/src/main.tsx"`,
         `src="/src/main.tsx?v=${nanoid()}"`
@@ -503,15 +548,15 @@ async function setupVite(app2, server) {
   });
 }
 function serveStatic(app2) {
-  const distPath = path2.resolve(import.meta.dirname, "public");
-  if (!fs.existsSync(distPath)) {
+  const distPath = path3.resolve(import.meta.dirname, "public");
+  if (!fs2.existsSync(distPath)) {
     throw new Error(
       `Could not find the build directory: ${distPath}, make sure to build the client first`
     );
   }
   app2.use(express.static(distPath));
   app2.use("*", (_req, res) => {
-    res.sendFile(path2.resolve(distPath, "index.html"));
+    res.sendFile(path3.resolve(distPath, "index.html"));
   });
 }
 
@@ -525,7 +570,7 @@ app.use(express2.json({
 app.use(express2.urlencoded({ extended: false }));
 app.use((req, res, next) => {
   const start = Date.now();
-  const path3 = req.path;
+  const path4 = req.path;
   let capturedJsonResponse = void 0;
   const originalResJson = res.json;
   res.json = function(bodyJson, ...args) {
@@ -534,8 +579,8 @@ app.use((req, res, next) => {
   };
   res.on("finish", () => {
     const duration = Date.now() - start;
-    if (path3.startsWith("/api")) {
-      let logLine = `${req.method} ${path3} ${res.statusCode} in ${duration}ms`;
+    if (path4.startsWith("/api")) {
+      let logLine = `${req.method} ${path4} ${res.statusCode} in ${duration}ms`;
       if (capturedJsonResponse) {
         logLine += ` :: ${JSON.stringify(capturedJsonResponse)}`;
       }

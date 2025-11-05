@@ -4,8 +4,39 @@ import { storage } from "./storage";
 import { insertPageSchema, insertRowSchema, insertImageSchema, updatePageSchema, updateRowSchema, updateImageSchema, insertShareLinkSchema } from "@shared/schema";
 import { z } from "zod";
 import { randomBytes } from "crypto";
+import multer from "multer";
+import fs from "fs";
+import path from "path";
 
 export async function registerRoutes(app: Express): Promise<Server> {
+  // Static serving for uploaded files
+  const uploadDir = path.resolve(process.cwd(), "uploads");
+  if (!fs.existsSync(uploadDir)) {
+    fs.mkdirSync(uploadDir, { recursive: true });
+  }
+  app.use("/uploads", (await import("express")).default.static(uploadDir));
+
+  // Configure multer storage for image uploads
+  const storageEngine = multer.diskStorage({
+    destination: (_req: any, _file: any, cb: any) => {
+      cb(null, uploadDir);
+    },
+    filename: (_req: any, file: any, cb: any) => {
+      const ext = path.extname(file.originalname) || ".jpg";
+      const safeBase = path.basename(file.originalname, ext).replace(/[^a-zA-Z0-9_-]/g, "");
+      const unique = Date.now() + "-" + Math.round(Math.random() * 1e9);
+      cb(null, `${safeBase || "image"}-${unique}${ext}`);
+    },
+  });
+  const upload = multer({
+    storage: storageEngine,
+    fileFilter: (_req: any, file: any, cb: any) => {
+      if (file.mimetype.startsWith("image/")) cb(null, true);
+      else cb(new Error("Only image uploads are allowed"));
+    },
+    limits: { fileSize: 10 * 1024 * 1024 }, // 10MB
+  });
+
   // Pages routes
   app.get("/api/pages", async (req, res) => {
     try {
@@ -183,6 +214,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(204).send();
     } catch (error) {
       res.status(500).json({ error: "Failed to delete image" });
+    }
+  });
+
+  // Upload route for image files
+  app.post("/api/upload", upload.single("file"), async (req: any, res) => {
+    try {
+      if (!req.file) {
+        return res.status(400).json({ error: "No file uploaded" });
+      }
+
+      const relativeUrl = `/uploads/${req.file.filename}`;
+      return res.status(201).json({
+        url: relativeUrl,
+        filename: req.file.filename,
+        originalname: req.file.originalname,
+        size: req.file.size,
+        mimetype: req.file.mimetype,
+      });
+    } catch (error: any) {
+      return res.status(500).json({ error: error?.message || "Failed to upload image" });
     }
   });
 
