@@ -1,5 +1,6 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { put } from '@vercel/blob';
+import fs from 'fs';
+import path from 'path';
 import Busboy from 'busboy';
 
 export const config = {
@@ -59,13 +60,16 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       return res.status(400).json({ error: 'Only image uploads are allowed' });
     }
 
-    // Upload to Vercel Blob (requires BLOB_READ_WRITE_TOKEN env in Vercel project)
-    const blob = await put(`images/${Date.now()}-${file.filename}`.replace(/\s+/g, '-'), file.buffer, {
-      access: 'public',
-      contentType: file.mimetype,
-    });
+    // Save to local uploads directory
+    const uploadsDir = path.resolve(process.cwd(), 'uploads');
+    if (!fs.existsSync(uploadsDir)) fs.mkdirSync(uploadsDir, { recursive: true });
 
-    return res.status(201).json({ url: blob.url, pathname: blob.pathname });
+    const safeName = `${Date.now()}-${file.filename}`.replace(/\s+/g, '-');
+    const filePath = path.join(uploadsDir, safeName);
+    await fs.promises.writeFile(filePath, file.buffer);
+
+    const relativeUrl = `/uploads/${safeName}`;
+    return res.status(201).json({ url: relativeUrl, pathname: relativeUrl });
   } catch (error: any) {
     console.error('Upload API error:', error);
     return res.status(500).json({ error: 'Failed to upload image', details: String(error?.message || error) });
