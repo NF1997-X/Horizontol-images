@@ -1,5 +1,7 @@
-import { type Page, type Row, type GalleryImage, type ShareLink, type InsertPage, type InsertRow, type InsertImage, type InsertShareLink } from "@shared/schema";
+import { type Page, type Row, type GalleryImage, type ShareLink, type InsertPage, type InsertRow, type InsertImage, type InsertShareLink, pages, rows, images, shareLinks } from "@shared/schema";
 import { randomUUID } from "crypto";
+import { db } from "./database";
+import { eq, desc, and } from "drizzle-orm";
 
 export interface IStorage {
   // Pages
@@ -27,6 +29,137 @@ export interface IStorage {
   getShareLinkByCode(shortCode: string): Promise<ShareLink | undefined>;
   getShareLinkByPageId(pageId: string): Promise<ShareLink | undefined>;
   createShareLink(shareLink: InsertShareLink): Promise<ShareLink>;
+}
+
+export class DatabaseStorage implements IStorage {
+  async getAllPages(): Promise<Page[]> {
+    return await db.select().from(pages).orderBy(pages.order);
+  }
+
+  async getPage(id: string): Promise<Page | undefined> {
+    const result = await db.select().from(pages).where(eq(pages.id, id)).limit(1);
+    return result[0];
+  }
+
+  async createPage(insertPage: Omit<InsertPage, "order">): Promise<Page> {
+    // Get the maximum order value
+    const allPages = await db.select().from(pages);
+    const maxOrder = allPages.length > 0 ? Math.max(...allPages.map((p) => p.order)) : -1;
+    
+    const result = await db.insert(pages).values({
+      name: insertPage.name,
+      order: maxOrder + 1
+    }).returning();
+    return result[0];
+  }
+
+  async updatePage(id: string, pageUpdate: Partial<InsertPage>): Promise<Page | undefined> {
+    const result = await db.update(pages)
+      .set(pageUpdate)
+      .where(eq(pages.id, id))
+      .returning();
+    return result[0];
+  }
+
+  async deletePage(id: string): Promise<void> {
+    await db.delete(pages).where(eq(pages.id, id));
+  }
+
+  async getRowsByPage(pageId: string): Promise<Row[]> {
+    return await db.select().from(rows)
+      .where(eq(rows.pageId, pageId))
+      .orderBy(rows.order);
+  }
+
+  async getRow(id: string): Promise<Row | undefined> {
+    const result = await db.select().from(rows).where(eq(rows.id, id)).limit(1);
+    return result[0];
+  }
+
+  async createRow(insertRow: Omit<InsertRow, "order">): Promise<Row> {
+    // Get the maximum order value for this page
+    const pageRows = await db.select().from(rows).where(eq(rows.pageId, insertRow.pageId));
+    const maxOrder = pageRows.length > 0 ? Math.max(...pageRows.map((r) => r.order)) : -1;
+    
+    const result = await db.insert(rows).values({
+      pageId: insertRow.pageId,
+      title: insertRow.title,
+      order: maxOrder + 1
+    }).returning();
+    return result[0];
+  }
+
+  async updateRow(id: string, rowUpdate: Partial<InsertRow>): Promise<Row | undefined> {
+    const result = await db.update(rows)
+      .set(rowUpdate)
+      .where(eq(rows.id, id))
+      .returning();
+    return result[0];
+  }
+
+  async deleteRow(id: string): Promise<void> {
+    await db.delete(rows).where(eq(rows.id, id));
+  }
+
+  async getImagesByRow(rowId: string): Promise<GalleryImage[]> {
+    return await db.select().from(images)
+      .where(eq(images.rowId, rowId))
+      .orderBy(images.order);
+  }
+
+  async getImage(id: string): Promise<GalleryImage | undefined> {
+    const result = await db.select().from(images).where(eq(images.id, id)).limit(1);
+    return result[0];
+  }
+
+  async createImage(insertImage: Omit<InsertImage, "order">): Promise<GalleryImage> {
+    // Get the maximum order value for this row
+    const rowImages = await db.select().from(images).where(eq(images.rowId, insertImage.rowId));
+    const maxOrder = rowImages.length > 0 ? Math.max(...rowImages.map((i) => i.order)) : -1;
+    
+    const result = await db.insert(images).values({
+      rowId: insertImage.rowId,
+      url: insertImage.url,
+      title: insertImage.title,
+      subtitle: insertImage.subtitle,
+      order: maxOrder + 1
+    }).returning();
+    return result[0];
+  }
+
+  async updateImage(id: string, imageUpdate: Partial<InsertImage>): Promise<GalleryImage | undefined> {
+    const result = await db.update(images)
+      .set(imageUpdate)
+      .where(eq(images.id, id))
+      .returning();
+    return result[0];
+  }
+
+  async deleteImage(id: string): Promise<void> {
+    await db.delete(images).where(eq(images.id, id));
+  }
+
+  async getShareLinkByCode(shortCode: string): Promise<ShareLink | undefined> {
+    const result = await db.select().from(shareLinks)
+      .where(eq(shareLinks.shortCode, shortCode))
+      .limit(1);
+    return result[0];
+  }
+
+  async getShareLinkByPageId(pageId: string): Promise<ShareLink | undefined> {
+    const result = await db.select().from(shareLinks)
+      .where(eq(shareLinks.pageId, pageId))
+      .limit(1);
+    return result[0];
+  }
+
+  async createShareLink(insertShareLink: InsertShareLink): Promise<ShareLink> {
+    const result = await db.insert(shareLinks).values({
+      shortCode: insertShareLink.shortCode,
+      pageId: insertShareLink.pageId
+    }).returning();
+    return result[0];
+  }
 }
 
 export class MemStorage implements IStorage {
@@ -205,4 +338,4 @@ export class MemStorage implements IStorage {
   }
 }
 
-export const storage = new MemStorage();
+export const storage = new DatabaseStorage();

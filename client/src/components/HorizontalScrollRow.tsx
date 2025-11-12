@@ -76,7 +76,7 @@ export function HorizontalScrollRow({
   return (
     <div className="py-8 border-b border-border">
       <div className="flex items-center justify-between mb-6 px-8">
-        <h2 className="text-xl font-semibold" data-testid="text-row-title">{title}</h2>
+        <h2 className="title-text font-semibold" data-testid="text-row-title">{title}</h2>
         <div className="flex items-center gap-2">
           <div className="hidden md:flex items-center gap-2">
             <Button
@@ -84,7 +84,7 @@ export function HorizontalScrollRow({
               size="icon"
               onClick={() => scroll("left")}
               disabled={!canScrollLeft}
-              className="w-10 h-10"
+              className="w-10 h-10 glass-button"
               data-testid="button-scroll-left"
             >
               <ChevronLeft className="w-5 h-5" />
@@ -94,7 +94,7 @@ export function HorizontalScrollRow({
               size="icon"
               onClick={() => scroll("right")}
               disabled={!canScrollRight}
-              className="w-10 h-10"
+              className="w-10 h-10 glass-button"
               data-testid="button-scroll-right"
             >
               <ChevronRight className="w-5 h-5" />
@@ -102,11 +102,11 @@ export function HorizontalScrollRow({
           </div>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="icon" className="w-10 h-10" data-testid="button-row-menu">
+              <Button variant="ghost" size="icon" className="w-10 h-10 glass-button" data-testid="button-row-menu">
                 <MoreVertical className="w-5 h-5" />
               </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
+            <DropdownMenuContent align="end" className="glass">
               <DropdownMenuItem onClick={onEditRow} data-testid="menu-edit-row">
                 <Edit className="w-4 h-4 mr-2" />
                 Edit Row
@@ -137,7 +137,7 @@ export function HorizontalScrollRow({
             onMouseLeave={() => setHoveredImage(null)}
             data-testid={`card-image-${index}`}
           >
-            <Card className="overflow-hidden border-card-border hover-elevate active-elevate-2 transition-all duration-300">
+            <Card className="overflow-hidden glass-card transition-all duration-300">
               <div
                 className="relative aspect-square cursor-pointer overflow-hidden"
                 onClick={() => onImageClick?.(image, index)}
@@ -153,7 +153,7 @@ export function HorizontalScrollRow({
                     <Button
                       variant="secondary"
                       size="icon"
-                      className="w-8 h-8"
+                      className="w-8 h-8 glass-button"
                       onClick={(e) => {
                         e.stopPropagation();
                         onEditImage?.(image.id);
@@ -165,7 +165,7 @@ export function HorizontalScrollRow({
                     <Button
                       variant="destructive"
                       size="icon"
-                      className="w-8 h-8"
+                      className="w-8 h-8 glass-button"
                       onClick={(e) => {
                         e.stopPropagation();
                         onDeleteImage?.(image.id);
@@ -179,9 +179,9 @@ export function HorizontalScrollRow({
               </div>
             </Card>
             <div className="mt-3 px-1">
-              <h3 className="text-base font-medium truncate" data-testid={`text-title-${index}`}>{image.title}</h3>
+              <h3 className="image-title-text font-medium truncate" data-testid={`text-title-${index}`}>{image.title}</h3>
               {image.subtitle && (
-                <p className="text-sm text-muted-foreground truncate" data-testid={`text-subtitle-${index}`}>
+                <p className="description-text text-muted-foreground truncate" data-testid={`text-subtitle-${index}`}>
                   {image.subtitle}
                 </p>
               )}
@@ -194,10 +194,10 @@ export function HorizontalScrollRow({
           onClick={onAddImage}
           data-testid="button-add-image-card"
         >
-          <Card className="aspect-square border-2 border-dashed border-border hover-elevate active-elevate-2 transition-all duration-300 flex items-center justify-center">
+          <Card className="aspect-square border-2 border-dashed glass-card transition-all duration-300 flex items-center justify-center border-white/20">
             <div className="text-center">
-              <div className="w-12 h-12 rounded-full bg-muted mx-auto mb-2 flex items-center justify-center">
-                <span className="text-2xl text-muted-foreground">+</span>
+              <div className="w-12 h-12 rounded-full glass mx-auto mb-2 flex items-center justify-center">
+                <span className="text-2xl text-foreground">+</span>
               </div>
               <p className="text-sm text-muted-foreground">Add Image</p>
             </div>
