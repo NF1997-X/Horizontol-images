@@ -14,6 +14,7 @@ import { EditPageDialog } from "@/components/EditPageDialog";
 import { useToast } from "@/hooks/use-toast";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient, apiRequest } from "@/lib/queryClient";
+import { DEMO_MODE, DEMO_CONFIG } from "@/lib/demo";
 import type { Page, Row, GalleryImage, ShareLink } from "@shared/schema";
 import LightGallery from "lightgallery/react";
 import lgThumbnail from "lightgallery/plugins/thumbnail";
@@ -45,13 +46,33 @@ export default function Gallery() {
   const [lightboxIndex, setLightboxIndex] = useState(0);
 
   const { data: pages = [], isLoading: pagesLoading } = useQuery<Page[]>({
-    queryKey: ["/api/pages"],
+    queryKey: [DEMO_MODE ? "/api/demo" : "/api/pages"],
+    queryFn: async () => {
+      if (DEMO_MODE) {
+        // Return static demo data
+        return [{ id: "demo-page-1", name: "Demo Gallery", createdAt: new Date().toISOString() }];
+      }
+      
+      const response = await fetch("/api/pages");
+      if (!response.ok) throw new Error("Failed to fetch pages");
+      return response.json();
+    },
   });
 
   const { data: rows = [], isLoading: rowsLoading } = useQuery<Row[]>({
     queryKey: ["/api/pages", activePage, "rows"],
     queryFn: async () => {
       if (!activePage) return [];
+      
+      if (DEMO_MODE) {
+        // Return static demo rows
+        return [
+          { id: "demo-row-1", pageId: "demo-page-1", title: "Nature Photos", position: 0, createdAt: new Date().toISOString() },
+          { id: "demo-row-2", pageId: "demo-page-1", title: "City Life", position: 1, createdAt: new Date().toISOString() },
+          { id: "demo-row-3", pageId: "demo-page-1", title: "Food & Drinks", position: 2, createdAt: new Date().toISOString() }
+        ];
+      }
+      
       const response = await fetch(`/api/pages/${activePage}/rows`);
       if (!response.ok) throw new Error("Failed to fetch rows");
       return response.json();
@@ -62,6 +83,27 @@ export default function Gallery() {
   const { data: allImages = [] } = useQuery<GalleryImage[]>({
     queryKey: ["/api/images", activePage],
     queryFn: async () => {
+      if (DEMO_MODE) {
+        // Return static demo images
+        return [
+          // Nature Photos
+          { id: "demo-img-1", rowId: "demo-row-1", url: "https://picsum.photos/800/600?random=1", alt: "Mountain Lake", position: 0, createdAt: new Date().toISOString() },
+          { id: "demo-img-2", rowId: "demo-row-1", url: "https://picsum.photos/800/600?random=2", alt: "Forest Path", position: 1, createdAt: new Date().toISOString() },
+          { id: "demo-img-3", rowId: "demo-row-1", url: "https://picsum.photos/800/600?random=3", alt: "Ocean Sunset", position: 2, createdAt: new Date().toISOString() },
+          { id: "demo-img-4", rowId: "demo-row-1", url: "https://picsum.photos/800/600?random=4", alt: "Desert Dunes", position: 3, createdAt: new Date().toISOString() },
+          
+          // City Life
+          { id: "demo-img-5", rowId: "demo-row-2", url: "https://picsum.photos/800/600?random=5", alt: "City Skyline", position: 0, createdAt: new Date().toISOString() },
+          { id: "demo-img-6", rowId: "demo-row-2", url: "https://picsum.photos/800/600?random=6", alt: "Street Art", position: 1, createdAt: new Date().toISOString() },
+          { id: "demo-img-7", rowId: "demo-row-2", url: "https://picsum.photos/800/600?random=7", alt: "Night Lights", position: 2, createdAt: new Date().toISOString() },
+          
+          // Food & Drinks
+          { id: "demo-img-8", rowId: "demo-row-3", url: "https://picsum.photos/800/600?random=8", alt: "Coffee Cup", position: 0, createdAt: new Date().toISOString() },
+          { id: "demo-img-9", rowId: "demo-row-3", url: "https://picsum.photos/800/600?random=9", alt: "Fresh Salad", position: 1, createdAt: new Date().toISOString() },
+          { id: "demo-img-10", rowId: "demo-row-3", url: "https://picsum.photos/800/600?random=10", alt: "Pizza Slice", position: 2, createdAt: new Date().toISOString() }
+        ];
+      }
+      
       const imagePromises = rows.map((row) =>
         fetch(`/api/rows/${row.id}/images`).then((res) => res.json())
       );
@@ -442,6 +484,7 @@ export default function Gallery() {
         onDeletePage={(pageId) => setDeletePageDialog({ open: true, pageId })}
         onCopyLink={handleCopyLink}
         onOpenPreview={handleOpenPreview}
+        isDemo={DEMO_MODE}
       />
 
       <main className="max-w-7xl mx-auto">
@@ -457,10 +500,17 @@ export default function Gallery() {
             </div>
             <h2 className="text-lg font-semibold mb-2">No rows yet</h2>
             <p className="text-muted-foreground mb-6">Create your first row to start adding images</p>
-            <Button onClick={() => setAddRowDialog(true)} data-testid="button-create-first-row">
-              <Plus className="w-4 h-4 mr-2" />
-              Create Row
-            </Button>
+            {!DEMO_MODE && (
+              <Button onClick={() => setAddRowDialog(true)} data-testid="button-create-first-row">
+                <Plus className="w-4 h-4 mr-2" />
+                Create Row
+              </Button>
+            )}
+            {DEMO_MODE && (
+              <div className="glass px-6 py-3 rounded-full bg-orange-500/20 text-orange-600 dark:text-orange-400 font-medium">
+                🚀 Demo Mode - Static Gallery Data
+              </div>
+            )}
           </div>
         ) : (
           <>
@@ -475,6 +525,7 @@ export default function Gallery() {
                 onAddImage={() => setAddImageDialog({ open: true, rowId: row.id })}
                 onEditImage={(imageId) => setEditImageDialog({ open: true, rowId: row.id, imageId })}
                 onDeleteImage={(imageId) => setDeleteImageDialog({ open: true, rowId: row.id, imageId })}
+                isDemo={DEMO_MODE}
               />
             ))}
             <div className="py-8 px-8">

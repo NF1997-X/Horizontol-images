@@ -26,6 +26,7 @@ interface HorizontalScrollRowProps {
   onEditImage?: (imageId: string) => void;
   onDeleteImage?: (imageId: string) => void;
   isPreviewMode?: boolean; // Hide all editing controls in preview
+  isDemo?: boolean; // Hide all editing controls in demo mode
 }
 
 export function HorizontalScrollRow({
@@ -38,6 +39,7 @@ export function HorizontalScrollRow({
   onEditImage,
   onDeleteImage,
   isPreviewMode = false,
+  isDemo = false,
 }: HorizontalScrollRowProps) {
   const scrollRef = useRef<HTMLDivElement>(null);
   const [canScrollLeft, setCanScrollLeft] = useState(false);
@@ -102,7 +104,7 @@ export function HorizontalScrollRow({
               <ChevronRight className="w-5 h-5" />
             </Button>
           </div>
-          {!isPreviewMode && (
+          {!isPreviewMode && !isDemo && (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="ghost" size="icon" className="w-10 h-10 glass-button" data-testid="button-row-menu">
@@ -152,7 +154,7 @@ export function HorizontalScrollRow({
                   className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
                   data-testid={`img-item-${index}`}
                 />
-                {hoveredImage === image.id && !isPreviewMode && (
+                {hoveredImage === image.id && !isPreviewMode && !isDemo && (
                   <div className="absolute inset-0 bg-black/60 flex items-center justify-center gap-2 transition-opacity duration-200">
                     <Button
                       variant="secondary"
@@ -193,7 +195,7 @@ export function HorizontalScrollRow({
           </div>
         ))}
 
-        {!isPreviewMode && (
+        {!isPreviewMode && !isDemo && (
           <div
             className="flex-shrink-0 w-[200px] md:w-[240px] cursor-pointer"
             onClick={onAddImage}
