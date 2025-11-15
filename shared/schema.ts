@@ -50,7 +50,7 @@ export const insertShareLinkSchema = createInsertSchema(shareLinks).omit({ id: t
 
 export const updatePageSchema = insertPageSchema.partial().omit({ order: true });
 export const updateRowSchema = insertRowSchema.partial().pick({ title: true });
-export const updateImageSchema = insertImageSchema.partial().pick({ url: true, title: true, subtitle: true });
+export const updateImageSchema = insertImageSchema.partial();
 
 export type InsertUser = z.infer<typeof insertUserSchema>;
 export type User = typeof users.$inferSelect;

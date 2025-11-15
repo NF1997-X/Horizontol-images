@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useRoute } from "wouter";
 import { HorizontalScrollRow, ImageItem } from "@/components/HorizontalScrollRow";
+import { ThemeToggle } from "@/components/ThemeToggle";
 import { useQuery } from "@tanstack/react-query";
 import type { Page, Row, GalleryImage, ShareLink } from "@shared/schema";
 import LightGallery from "lightgallery/react";
@@ -99,13 +100,14 @@ export default function Preview() {
 
   return (
     <div className="min-h-screen bg-background">
-      <header className="border-b sticky top-0 z-50 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+      <header className="border-b sticky top-0 z-50 glass-header">
         <div className="max-w-7xl mx-auto px-8 py-6">
           <div className="flex items-center justify-between">
             <div>
-              <h1 className="text-3xl font-bold" data-testid="text-preview-title">{page.name}</h1>
+              <h1 className="preview-title-text font-bold" data-testid="text-preview-title">{page.name}</h1>
               <p className="text-sm text-muted-foreground mt-1">Read-only preview</p>
             </div>
+            <ThemeToggle />
           </div>
         </div>
       </header>
@@ -123,6 +125,7 @@ export default function Preview() {
                 title={row.title}
                 images={row.images}
                 onImageClick={(_, index) => handleImageClick(row.images, index)}
+                isPreviewMode={true}
                 data-testid={`row-preview-${row.id}`}
               />
             ))}

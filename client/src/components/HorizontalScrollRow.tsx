@@ -25,6 +25,7 @@ interface HorizontalScrollRowProps {
   onAddImage?: () => void;
   onEditImage?: (imageId: string) => void;
   onDeleteImage?: (imageId: string) => void;
+  isPreviewMode?: boolean; // Hide all editing controls in preview
 }
 
 export function HorizontalScrollRow({
@@ -36,6 +37,7 @@ export function HorizontalScrollRow({
   onAddImage,
   onEditImage,
   onDeleteImage,
+  isPreviewMode = false,
 }: HorizontalScrollRowProps) {
   const scrollRef = useRef<HTMLDivElement>(null);
   const [canScrollLeft, setCanScrollLeft] = useState(false);
@@ -100,23 +102,25 @@ export function HorizontalScrollRow({
               <ChevronRight className="w-5 h-5" />
             </Button>
           </div>
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="icon" className="w-10 h-10 glass-button" data-testid="button-row-menu">
-                <MoreVertical className="w-5 h-5" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="glass">
-              <DropdownMenuItem onClick={onEditRow} data-testid="menu-edit-row">
-                <Edit className="w-4 h-4 mr-2" />
-                Edit Row
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={onDeleteRow} className="text-destructive" data-testid="menu-delete-row">
-                <Trash2 className="w-4 h-4 mr-2" />
-                Delete Row
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
+          {!isPreviewMode && (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" size="icon" className="w-10 h-10 glass-button" data-testid="button-row-menu">
+                  <MoreVertical className="w-5 h-5" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="glass">
+                <DropdownMenuItem onClick={onEditRow} data-testid="menu-edit-row">
+                  <Edit className="w-4 h-4 mr-2" />
+                  Edit Row
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={onDeleteRow} className="text-destructive" data-testid="menu-delete-row">
+                  <Trash2 className="w-4 h-4 mr-2" />
+                  Delete Row
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          )}
         </div>
       </div>
 
@@ -148,7 +152,7 @@ export function HorizontalScrollRow({
                   className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
                   data-testid={`img-item-${index}`}
                 />
-                {hoveredImage === image.id && (
+                {hoveredImage === image.id && !isPreviewMode && (
                   <div className="absolute inset-0 bg-black/60 flex items-center justify-center gap-2 transition-opacity duration-200">
                     <Button
                       variant="secondary"
@@ -189,20 +193,22 @@ export function HorizontalScrollRow({
           </div>
         ))}
 
-        <div
-          className="flex-shrink-0 w-[200px] md:w-[240px] cursor-pointer"
-          onClick={onAddImage}
-          data-testid="button-add-image-card"
-        >
-          <Card className="aspect-square border-2 border-dashed glass-card transition-all duration-300 flex items-center justify-center border-white/20">
-            <div className="text-center">
-              <div className="w-12 h-12 rounded-full glass mx-auto mb-2 flex items-center justify-center">
-                <span className="text-2xl text-foreground">+</span>
+        {!isPreviewMode && (
+          <div
+            className="flex-shrink-0 w-[200px] md:w-[240px] cursor-pointer"
+            onClick={onAddImage}
+            data-testid="button-add-image-card"
+          >
+            <Card className="aspect-square border-2 border-dashed glass-card transition-all duration-300 flex items-center justify-center border-white/20">
+              <div className="text-center">
+                <div className="w-12 h-12 rounded-full glass mx-auto mb-2 flex items-center justify-center">
+                  <span className="text-2xl text-foreground">+</span>
+                </div>
+                <p className="text-sm text-muted-foreground">Add Image</p>
               </div>
-              <p className="text-sm text-muted-foreground">Add Image</p>
-            </div>
-          </Card>
-        </div>
+            </Card>
+          </div>
+        )}
       </div>
 
       <style>{`

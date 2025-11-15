@@ -152,6 +152,7 @@ export default function Gallery() {
 
   const createImageMutation = useMutation({
     mutationFn: async (data: { rowId: string; url: string; title: string; subtitle?: string }) => {
+      console.log('Creating image with data:', data);
       return apiRequest("/api/images", "POST", {
         rowId: data.rowId,
         url: data.url,
@@ -159,15 +160,20 @@ export default function Gallery() {
         subtitle: data.subtitle || null,
       });
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/images", activePage] });
+    onSuccess: (newImage) => {
+      console.log('Image created successfully:', newImage);
+      // Invalidate all related queries to refresh the UI
+      queryClient.invalidateQueries({ queryKey: ["/api/pages"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/images"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/rows"] });
       setAddImageDialog({ open: false });
-      toast({ title: "Image added successfully" });
+      toast({ title: "✅ Image added successfully", variant: "default" });
     },
-    onError: () => {
+    onError: (error: any) => {
+      console.error('Failed to create image:', error);
       toast({ 
-        title: "Failed to add image", 
-        description: "Please try again",
+        title: "❌ Failed to add image", 
+        description: error?.message || "Please try again",
         variant: "destructive" 
       });
     },
@@ -198,6 +204,11 @@ export default function Gallery() {
   });
 
   const handleAddImage = (rowId: string, data: { url: string; title: string; subtitle?: string }) => {
+    console.log('handleAddImage called with:', { rowId, data });
+    if (!rowId) {
+      toast({ title: "❌ Error", description: "No row selected", variant: "destructive" });
+      return;
+    }
     createImageMutation.mutate({ rowId, ...data });
   };
 
@@ -254,77 +265,109 @@ export default function Gallery() {
       const baseUrl = window.location.origin;
       const shareUrl = `${baseUrl}/preview/${shareLink.shortCode}`;
       
-      // Just force copy! No questions asked!
-      const forceCopy = async (text: string) => {
-        try {
-          // Method 1: Modern clipboard API
-          if (navigator.clipboard) {
-            await navigator.clipboard.writeText(text);
-            return true;
+      // REAL COPY FUNCTION - INI YANG BETUL!
+      const realCopyToClipboard = async (text: string): Promise<boolean> => {
+        console.log('🔥 REAL COPY attempt for:', text);
+        
+        // Method 1: Modern clipboard (try multiple times)
+        if (navigator.clipboard && window.isSecureContext) {
+          for (let attempt = 1; attempt <= 3; attempt++) {
+            try {
+              await navigator.clipboard.writeText(text);
+              console.log(`✅ Modern clipboard SUCCESS on attempt ${attempt}`);
+              return true;
+            } catch (error) {
+              console.log(`❌ Modern clipboard failed attempt ${attempt}:`, error);
+              if (attempt < 3) await new Promise(resolve => setTimeout(resolve, 100));
+            }
           }
-        } catch (e) {
-          // Silent fail, try next method
         }
 
-        try {
-          // Method 2: Classic execCommand
-          const textArea = document.createElement("textarea");
-          textArea.value = text;
-          textArea.style.position = "absolute";
-          textArea.style.left = "-9999px";
-          document.body.appendChild(textArea);
-          textArea.select();
-          textArea.setSelectionRange(0, 99999);
-          const success = document.execCommand('copy');
-          document.body.removeChild(textArea);
-          if (success) return true;
-        } catch (e) {
-          // Silent fail, try next method
-        }
-
-        try {
-          // Method 3: Force focus and select
-          const input = document.createElement("input");
-          input.value = text;
-          input.style.position = "fixed";
-          input.style.opacity = "0";
-          document.body.appendChild(input);
-          input.focus();
-          input.select();
-          document.execCommand('copy');
-          document.body.removeChild(input);
-          return true;
-        } catch (e) {
-          // Method 4: Last resort - temporary visible input
-          const input = document.createElement("input");
-          input.value = text;
-          input.style.position = "fixed";
-          input.style.top = "-100px";
-          input.style.left = "0";
-          input.style.zIndex = "9999";
-          document.body.appendChild(input);
-          input.focus();
-          input.select();
+        // Method 2: Focus + select + copy (aggressive version)
+        for (let attempt = 1; attempt <= 2; attempt++) {
           try {
-            document.execCommand('copy');
-            document.body.removeChild(input);
-            return true;
-          } catch (err) {
-            document.body.removeChild(input);
-            return false;
+            const textarea = document.createElement('textarea');
+            textarea.value = text;
+            textarea.style.position = 'fixed';
+            textarea.style.left = '-1000px';
+            textarea.style.top = '-1000px';
+            
+            document.body.appendChild(textarea);
+            
+            // Force focus and selection
+            textarea.focus();
+            textarea.select();
+            textarea.setSelectionRange(0, text.length);
+            
+            // Try copy command
+            const copyResult = document.execCommand('copy');
+            document.body.removeChild(textarea);
+            
+            if (copyResult) {
+              console.log(`✅ execCommand SUCCESS on attempt ${attempt}`);
+              return true;
+            }
+            console.log(`❌ execCommand failed attempt ${attempt}`);
+          } catch (error) {
+            console.log(`❌ execCommand error attempt ${attempt}:`, error);
           }
+        }
+
+        // Method 3: Fallback with user interaction
+        try {
+          // Create a visible input for user to copy manually
+          const input = document.createElement('input');
+          input.type = 'text';
+          input.value = text;
+          input.style.position = 'fixed';
+          input.style.left = '50%';
+          input.style.top = '50%';
+          input.style.transform = 'translate(-50%, -50%)';
+          input.style.zIndex = '999999';
+          input.style.padding = '10px';
+          input.style.fontSize = '14px';
+          input.style.border = '2px solid #007acc';
+          input.style.borderRadius = '8px';
+          input.style.background = 'white';
+          input.style.color = 'black';
+          input.style.width = '400px';
+          
+          document.body.appendChild(input);
+          
+          // Auto select the text
+          input.focus();
+          input.select();
+          
+          // Show instruction
+          alert('Link is selected below. Press Ctrl+C (or Cmd+C on Mac) to copy, then press OK.');
+          
+          // Clean up
+          document.body.removeChild(input);
+          console.log('✅ Manual copy assistance provided');
+          return true;
+        } catch (error) {
+          console.log('❌ Manual copy failed:', error);
+          return false;
         }
       };
 
-      // Just do it! Force copy with all methods
-      await forceCopy(shareUrl);
+      const copySuccess = await realCopyToClipboard(shareUrl);
       
-      // Always show success - assume it worked!
-      toast({ 
-        title: "✅ Link copied!", 
-        description: `Share link: ${shareUrl}`,
-        variant: "default"
-      });
+      if (copySuccess) {
+        toast({ 
+          title: "✅ Link copied!", 
+          description: "Share link has been copied to clipboard",
+          variant: "default"
+        });
+      } else {
+        // Fallback - show the URL for manual copying
+        toast({ 
+          title: "📋 Share Link Created", 
+          description: shareUrl,
+          variant: "default",
+          duration: 10000
+        });
+      }
     },
     onError: (error) => {
       console.error('Share link error:', error);
@@ -337,6 +380,7 @@ export default function Gallery() {
   });
 
   const handleCopyLink = (pageId: string) => {
+    console.log('Copy link clicked for pageId:', pageId);
     sharePageMutation.mutate(pageId);
   };
 
@@ -459,7 +503,7 @@ export default function Gallery() {
 
       <AddImageDialog
         open={addImageDialog.open}
-        onOpenChange={(open) => setAddImageDialog({ open })}
+        onOpenChange={(open) => setAddImageDialog({ open, rowId: open ? addImageDialog.rowId : undefined })}
         onSubmit={(data) => addImageDialog.rowId && handleAddImage(addImageDialog.rowId, data)}
         isLoading={createImageMutation.isPending}
       />

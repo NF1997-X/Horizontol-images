@@ -181,14 +181,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post("/api/images", async (req, res) => {
     try {
+      console.log('POST /api/images - Request body:', req.body);
       const data = insertImageSchema.omit({ order: true }).parse(req.body);
+      console.log('Parsed data:', data);
       const image = await storage.createImage(data);
+      console.log('Created image:', image);
       res.status(201).json(image);
     } catch (error) {
+      console.error('Error creating image:', error);
       if (error instanceof z.ZodError) {
         return res.status(400).json({ error: "Invalid data", details: error.errors });
       }
-      res.status(500).json({ error: "Failed to create image" });
+      res.status(500).json({ error: "Failed to create image", details: String(error) });
     }
   });
 

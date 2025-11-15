@@ -343,6 +343,11 @@
     font-size: 9px;
   }
 
+  /* Preview page title size */
+  .preview-title-text {
+    font-size: 12px;
+  }
+
   /* Glass Theme Styles - LIGHT MODE */
   .glass {
     background: rgba(255, 255, 255, 0.15);
