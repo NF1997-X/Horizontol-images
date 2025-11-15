@@ -1,4 +1,4 @@
-import { type Page, type Row, type GalleryImage, type ShareLink, type InsertPage, type InsertRow, type InsertImage, type InsertShareLink, pages, rows, images, shareLinks } from "@shared/schema";
+import { type Page, type Row, type GalleryImage, type ShareLink, type InsertPage, type InsertRow, type InsertImage, type InsertShareLink, pages, rows, images, shareLinks } from "../shared/schema.js";
 import { randomUUID } from "crypto";
 import { db } from "./database";
 import { eq, desc, and } from "drizzle-orm";
