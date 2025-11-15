@@ -1,5 +1,13 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 
+// TypeScript interface for share links
+interface ShareLink {
+  id: string;
+  pageId: string;
+  shortCode: string;
+  createdAt: string;
+}
+
 // Demo data - no database needed!
 const DEMO_DATA = {
   pages: [
@@ -27,7 +35,7 @@ const DEMO_DATA = {
     { id: '9', rowId: '3', url: 'https://picsum.photos/400/300?random=9', title: 'Fresh Salad', subtitle: 'Healthy choice', order: 1, createdAt: new Date().toISOString() },
     { id: '10', rowId: '3', url: 'https://picsum.photos/400/300?random=10', title: 'Pizza Time', subtitle: 'Comfort food', order: 2, createdAt: new Date().toISOString() },
   ],
-  shareLinks: []
+  shareLinks: [] as ShareLink[]
 };
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
