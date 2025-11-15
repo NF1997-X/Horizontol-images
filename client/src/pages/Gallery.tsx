@@ -50,7 +50,7 @@ export default function Gallery() {
     queryFn: async () => {
       if (DEMO_MODE) {
         // Return static demo data
-        return [{ id: "demo-page-1", name: "Demo Gallery", createdAt: new Date().toISOString() }];
+        return [{ id: "demo-page-1", name: "Demo Gallery", order: 0 }];
       }
       
       const response = await fetch("/api/pages");
@@ -67,9 +67,9 @@ export default function Gallery() {
       if (DEMO_MODE) {
         // Return static demo rows
         return [
-          { id: "demo-row-1", pageId: "demo-page-1", title: "Nature Photos", position: 0, createdAt: new Date().toISOString() },
-          { id: "demo-row-2", pageId: "demo-page-1", title: "City Life", position: 1, createdAt: new Date().toISOString() },
-          { id: "demo-row-3", pageId: "demo-page-1", title: "Food & Drinks", position: 2, createdAt: new Date().toISOString() }
+          { id: "demo-row-1", pageId: "demo-page-1", title: "Nature Photos", order: 0 },
+          { id: "demo-row-2", pageId: "demo-page-1", title: "City Life", order: 1 },
+          { id: "demo-row-3", pageId: "demo-page-1", title: "Food & Drinks", order: 2 }
         ];
       }
       
@@ -87,20 +87,20 @@ export default function Gallery() {
         // Return static demo images
         return [
           // Nature Photos
-          { id: "demo-img-1", rowId: "demo-row-1", url: "https://picsum.photos/800/600?random=1", alt: "Mountain Lake", position: 0, createdAt: new Date().toISOString() },
-          { id: "demo-img-2", rowId: "demo-row-1", url: "https://picsum.photos/800/600?random=2", alt: "Forest Path", position: 1, createdAt: new Date().toISOString() },
-          { id: "demo-img-3", rowId: "demo-row-1", url: "https://picsum.photos/800/600?random=3", alt: "Ocean Sunset", position: 2, createdAt: new Date().toISOString() },
-          { id: "demo-img-4", rowId: "demo-row-1", url: "https://picsum.photos/800/600?random=4", alt: "Desert Dunes", position: 3, createdAt: new Date().toISOString() },
+          { id: "demo-img-1", rowId: "demo-row-1", url: "https://picsum.photos/800/600?random=1", title: "Mountain Lake", subtitle: "Beautiful landscape", order: 0 },
+          { id: "demo-img-2", rowId: "demo-row-1", url: "https://picsum.photos/800/600?random=2", title: "Forest Path", subtitle: "Peaceful walk", order: 1 },
+          { id: "demo-img-3", rowId: "demo-row-1", url: "https://picsum.photos/800/600?random=3", title: "Ocean Sunset", subtitle: "Relaxing sounds", order: 2 },
+          { id: "demo-img-4", rowId: "demo-row-1", url: "https://picsum.photos/800/600?random=4", title: "Desert Dunes", subtitle: "Golden hour", order: 3 },
           
           // City Life
-          { id: "demo-img-5", rowId: "demo-row-2", url: "https://picsum.photos/800/600?random=5", alt: "City Skyline", position: 0, createdAt: new Date().toISOString() },
-          { id: "demo-img-6", rowId: "demo-row-2", url: "https://picsum.photos/800/600?random=6", alt: "Street Art", position: 1, createdAt: new Date().toISOString() },
-          { id: "demo-img-7", rowId: "demo-row-2", url: "https://picsum.photos/800/600?random=7", alt: "Night Lights", position: 2, createdAt: new Date().toISOString() },
+          { id: "demo-img-5", rowId: "demo-row-2", url: "https://picsum.photos/800/600?random=5", title: "City Skyline", subtitle: "Urban beauty", order: 0 },
+          { id: "demo-img-6", rowId: "demo-row-2", url: "https://picsum.photos/800/600?random=6", title: "Street Art", subtitle: "Creative walls", order: 1 },
+          { id: "demo-img-7", rowId: "demo-row-2", url: "https://picsum.photos/800/600?random=7", title: "Night Lights", subtitle: "City never sleeps", order: 2 },
           
           // Food & Drinks
-          { id: "demo-img-8", rowId: "demo-row-3", url: "https://picsum.photos/800/600?random=8", alt: "Coffee Cup", position: 0, createdAt: new Date().toISOString() },
-          { id: "demo-img-9", rowId: "demo-row-3", url: "https://picsum.photos/800/600?random=9", alt: "Fresh Salad", position: 1, createdAt: new Date().toISOString() },
-          { id: "demo-img-10", rowId: "demo-row-3", url: "https://picsum.photos/800/600?random=10", alt: "Pizza Slice", position: 2, createdAt: new Date().toISOString() }
+          { id: "demo-img-8", rowId: "demo-row-3", url: "https://picsum.photos/800/600?random=8", title: "Coffee Break", subtitle: "Morning fuel", order: 0 },
+          { id: "demo-img-9", rowId: "demo-row-3", url: "https://picsum.photos/800/600?random=9", title: "Fresh Salad", subtitle: "Healthy choice", order: 1 },
+          { id: "demo-img-10", rowId: "demo-row-3", url: "https://picsum.photos/800/600?random=10", title: "Pizza Time", subtitle: "Comfort food", order: 2 }
         ];
       }
       
@@ -528,12 +528,14 @@ export default function Gallery() {
                 isDemo={DEMO_MODE}
               />
             ))}
-            <div className="py-8 px-8">
-              <Button onClick={() => setAddRowDialog(true)} variant="outline" className="w-full" data-testid="button-add-row">
-                <Plus className="w-4 h-4 mr-2" />
-                Add New Row
-              </Button>
-            </div>
+            {!DEMO_MODE && (
+              <div className="py-8 px-8">
+                <Button onClick={() => setAddRowDialog(true)} variant="outline" className="w-full" data-testid="button-add-row">
+                  <Plus className="w-4 h-4 mr-2" />
+                  Add New Row
+                </Button>
+              </div>
+            )}
           </>
         )}
       </main>
