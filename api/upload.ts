@@ -1,7 +1,6 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import fs from 'fs';
-import path from 'path';
 import Busboy from 'busboy';
+import { uploadToCloudinary } from '../server/cloudinary.js';
 
 export const config = {
   api: {
@@ -60,18 +59,23 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       return res.status(400).json({ error: 'Only image uploads are allowed' });
     }
 
-    // Save to local uploads directory
-    const uploadsDir = path.resolve(process.cwd(), 'uploads');
-    if (!fs.existsSync(uploadsDir)) fs.mkdirSync(uploadsDir, { recursive: true });
+    console.log('📁 Uploading to Cloudinary:', file.filename, `(${Math.round(file.buffer.length / 1024)}KB)`);
 
-    const safeName = `${Date.now()}-${file.filename}`.replace(/\s+/g, '-');
-    const filePath = path.join(uploadsDir, safeName);
-    await fs.promises.writeFile(filePath, file.buffer);
-
-    const relativeUrl = `/uploads/${safeName}`;
-    return res.status(201).json({ url: relativeUrl, pathname: relativeUrl });
+    // Upload to Cloudinary instead of local filesystem
+    const cloudinaryUrl = await uploadToCloudinary(file.buffer, file.filename);
+    
+    console.log('✅ Cloudinary upload successful:', cloudinaryUrl);
+    
+    return res.status(201).json({ 
+      url: cloudinaryUrl, 
+      pathname: cloudinaryUrl,
+      message: 'Image uploaded to cloud storage successfully' 
+    });
   } catch (error: any) {
-    console.error('Upload API error:', error);
-    return res.status(500).json({ error: 'Failed to upload image', details: String(error?.message || error) });
+    console.error('❌ Upload API error:', error);
+    return res.status(500).json({ 
+      error: 'Failed to upload image to cloud storage', 
+      details: String(error?.message || error) 
+    });
   }
 }

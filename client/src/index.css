@@ -243,7 +243,10 @@
 
   /* Hide ugly search cancel button in Chrome until we can style it properly */
   input[type="search"]::-webkit-search-cancel-button {
-    @apply hidden;
+        CLOUDINARY_CLOUD_NAME=your_cloud_name
+    CLOUDINARY_API_KEY=your_    CLOUDINARY_CLOUD_NAME=your_cloud_name
+    CLOUDINARY_API_KEY=your_api_key  
+    CLOUDINARY_API_SECRET=your_api_secret hidden;
   }
 
   /* Placeholder styling for contentEditable div */
