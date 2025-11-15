@@ -29,7 +29,7 @@ export async function uploadToCloudinary(buffer: Buffer, filename: string): Prom
           { quality: 'auto', fetch_format: 'auto' }
         ]
       },
-      (error, result: CloudinaryUploadResult | undefined) => {
+      (error: any, result: CloudinaryUploadResult | undefined) => {
         if (error) {
           console.error('Cloudinary upload error:', error);
           reject(new Error(`Failed to upload to Cloudinary: ${error.message}`));

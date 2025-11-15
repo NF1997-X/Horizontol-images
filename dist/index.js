@@ -1,161 +1,33 @@
+var __defProp = Object.defineProperty;
+var __export = (target, all) => {
+  for (var name in all)
+    __defProp(target, name, { get: all[name], enumerable: true });
+};
+
 // server/index.ts
+import "dotenv/config";
 import express2 from "express";
 
 // server/routes.ts
 import { createServer } from "http";
 
-// server/storage.ts
-import { randomUUID } from "crypto";
-var MemStorage = class {
-  pages;
-  rows;
-  images;
-  shareLinks;
-  constructor() {
-    this.pages = /* @__PURE__ */ new Map();
-    this.rows = /* @__PURE__ */ new Map();
-    this.images = /* @__PURE__ */ new Map();
-    this.shareLinks = /* @__PURE__ */ new Map();
-    const page1 = { id: randomUUID(), name: "Gallery 1", order: 0 };
-    const page2 = { id: randomUUID(), name: "Gallery 2", order: 1 };
-    this.pages.set(page1.id, page1);
-    this.pages.set(page2.id, page2);
-    const row1 = { id: randomUUID(), pageId: page1.id, title: "Nature Collection", order: 0 };
-    const row2 = { id: randomUUID(), pageId: page1.id, title: "Urban Photography", order: 1 };
-    const row3 = { id: randomUUID(), pageId: page2.id, title: "Abstract Art", order: 0 };
-    this.rows.set(row1.id, row1);
-    this.rows.set(row2.id, row2);
-    this.rows.set(row3.id, row3);
-    const sampleImages = [
-      { rowId: row1.id, url: "https://picsum.photos/id/112/300/300", title: "Mountain View", subtitle: "Beautiful landscape", order: 0 },
-      { rowId: row1.id, url: "https://picsum.photos/id/122/300/300", title: "Ocean Waves", subtitle: "Seascape", order: 1 },
-      { rowId: row1.id, url: "https://picsum.photos/id/132/300/300", title: "Forest Path", subtitle: "Nature trail", order: 2 },
-      { rowId: row1.id, url: "https://picsum.photos/id/142/300/300", title: "Desert Sunset", subtitle: "Golden hour", order: 3 },
-      { rowId: row1.id, url: "https://picsum.photos/id/152/300/300", title: "River Flow", subtitle: "Waterscape", order: 4 },
-      { rowId: row1.id, url: "https://picsum.photos/id/162/300/300", title: "Snow Peak", subtitle: "Winter scene", order: 5 },
-      { rowId: row2.id, url: "https://picsum.photos/id/172/300/300", title: "City Lights", subtitle: "Night view", order: 0 },
-      { rowId: row2.id, url: "https://picsum.photos/id/182/300/300", title: "Street Art", subtitle: "Graffiti", order: 1 },
-      { rowId: row2.id, url: "https://picsum.photos/id/192/300/300", title: "Architecture", subtitle: "Modern building", order: 2 },
-      { rowId: row2.id, url: "https://picsum.photos/id/1102/300/300", title: "Bridge", subtitle: "Infrastructure", order: 3 },
-      { rowId: row3.id, url: "https://picsum.photos/id/103/300/300", title: "Color Splash", subtitle: "Abstract", order: 0 },
-      { rowId: row3.id, url: "https://picsum.photos/id/113/300/300", title: "Geometric", subtitle: "Patterns", order: 1 },
-      { rowId: row3.id, url: "https://picsum.photos/id/123/300/300", title: "Texture", subtitle: "Surface", order: 2 },
-      { rowId: row3.id, url: "https://picsum.photos/id/133/300/300", title: "Gradient", subtitle: "Colors", order: 3 },
-      { rowId: row3.id, url: "https://picsum.photos/id/143/300/300", title: "Shapes", subtitle: "Forms", order: 4 }
-    ];
-    sampleImages.forEach((img) => {
-      const image = { id: randomUUID(), ...img };
-      this.images.set(image.id, image);
-    });
-  }
-  async getAllPages() {
-    return Array.from(this.pages.values()).sort((a, b) => a.order - b.order);
-  }
-  async getPage(id) {
-    return this.pages.get(id);
-  }
-  async createPage(insertPage) {
-    const id = randomUUID();
-    const allPages = Array.from(this.pages.values());
-    const maxOrder = allPages.length > 0 ? Math.max(...allPages.map((p) => p.order)) : -1;
-    const page = { id, name: insertPage.name, order: maxOrder + 1 };
-    this.pages.set(id, page);
-    return page;
-  }
-  async updatePage(id, pageUpdate) {
-    const page = this.pages.get(id);
-    if (!page) return void 0;
-    const updated = { ...page, ...pageUpdate };
-    this.pages.set(id, updated);
-    return updated;
-  }
-  async deletePage(id) {
-    this.pages.delete(id);
-    const rowsToDelete = Array.from(this.rows.values()).filter((r) => r.pageId === id);
-    rowsToDelete.forEach((row) => {
-      this.rows.delete(row.id);
-      const imagesToDelete = Array.from(this.images.values()).filter((i) => i.rowId === row.id);
-      imagesToDelete.forEach((img) => this.images.delete(img.id));
-    });
-  }
-  async getRowsByPage(pageId) {
-    return Array.from(this.rows.values()).filter((r) => r.pageId === pageId).sort((a, b) => a.order - b.order);
-  }
-  async getRow(id) {
-    return this.rows.get(id);
-  }
-  async createRow(insertRow) {
-    const id = randomUUID();
-    const pageRows = Array.from(this.rows.values()).filter((r) => r.pageId === insertRow.pageId);
-    const maxOrder = pageRows.length > 0 ? Math.max(...pageRows.map((r) => r.order)) : -1;
-    const row = { id, pageId: insertRow.pageId, title: insertRow.title, order: maxOrder + 1 };
-    this.rows.set(id, row);
-    return row;
-  }
-  async updateRow(id, rowUpdate) {
-    const row = this.rows.get(id);
-    if (!row) return void 0;
-    const updated = { ...row, ...rowUpdate };
-    this.rows.set(id, updated);
-    return updated;
-  }
-  async deleteRow(id) {
-    this.rows.delete(id);
-    const imagesToDelete = Array.from(this.images.values()).filter((i) => i.rowId === id);
-    imagesToDelete.forEach((img) => this.images.delete(img.id));
-  }
-  async getImagesByRow(rowId) {
-    return Array.from(this.images.values()).filter((i) => i.rowId === rowId).sort((a, b) => a.order - b.order);
-  }
-  async getImage(id) {
-    return this.images.get(id);
-  }
-  async createImage(insertImage) {
-    const id = randomUUID();
-    const rowImages = Array.from(this.images.values()).filter((i) => i.rowId === insertImage.rowId);
-    const maxOrder = rowImages.length > 0 ? Math.max(...rowImages.map((i) => i.order)) : -1;
-    const image = {
-      id,
-      rowId: insertImage.rowId,
-      url: insertImage.url,
-      title: insertImage.title,
-      subtitle: insertImage.subtitle ?? null,
-      order: maxOrder + 1
-    };
-    this.images.set(id, image);
-    return image;
-  }
-  async updateImage(id, imageUpdate) {
-    const image = this.images.get(id);
-    if (!image) return void 0;
-    const updated = { ...image, ...imageUpdate };
-    this.images.set(id, updated);
-    return updated;
-  }
-  async deleteImage(id) {
-    this.images.delete(id);
-  }
-  async getShareLinkByCode(shortCode) {
-    return Array.from(this.shareLinks.values()).find((link) => link.shortCode === shortCode);
-  }
-  async getShareLinkByPageId(pageId) {
-    return Array.from(this.shareLinks.values()).find((link) => link.pageId === pageId);
-  }
-  async createShareLink(insertShareLink) {
-    const id = randomUUID();
-    const shareLink = {
-      id,
-      shortCode: insertShareLink.shortCode,
-      pageId: insertShareLink.pageId,
-      createdAt: Math.floor(Date.now() / 1e3)
-    };
-    this.shareLinks.set(id, shareLink);
-    return shareLink;
-  }
-};
-var storage = new MemStorage();
-
 // shared/schema.ts
+var schema_exports = {};
+__export(schema_exports, {
+  images: () => images,
+  insertImageSchema: () => insertImageSchema,
+  insertPageSchema: () => insertPageSchema,
+  insertRowSchema: () => insertRowSchema,
+  insertShareLinkSchema: () => insertShareLinkSchema,
+  insertUserSchema: () => insertUserSchema,
+  pages: () => pages,
+  rows: () => rows,
+  shareLinks: () => shareLinks,
+  updateImageSchema: () => updateImageSchema,
+  updatePageSchema: () => updatePageSchema,
+  updateRowSchema: () => updateRowSchema,
+  users: () => users
+});
 import { sql } from "drizzle-orm";
 import { pgTable, text, varchar, integer } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
@@ -199,7 +71,110 @@ var insertImageSchema = createInsertSchema(images).omit({ id: true });
 var insertShareLinkSchema = createInsertSchema(shareLinks).omit({ id: true, createdAt: true });
 var updatePageSchema = insertPageSchema.partial().omit({ order: true });
 var updateRowSchema = insertRowSchema.partial().pick({ title: true });
-var updateImageSchema = insertImageSchema.partial().pick({ url: true, title: true, subtitle: true });
+var updateImageSchema = insertImageSchema.partial();
+
+// server/database.ts
+import { neon } from "@neondatabase/serverless";
+import { drizzle } from "drizzle-orm/neon-http";
+if (!process.env.DATABASE_URL) {
+  throw new Error("DATABASE_URL is required");
+}
+var sql2 = neon(process.env.DATABASE_URL);
+var db = drizzle(sql2, { schema: schema_exports });
+
+// server/storage.ts
+import { eq } from "drizzle-orm";
+var DatabaseStorage = class {
+  async getAllPages() {
+    return await db.select().from(pages).orderBy(pages.order);
+  }
+  async getPage(id) {
+    const result = await db.select().from(pages).where(eq(pages.id, id)).limit(1);
+    return result[0];
+  }
+  async createPage(insertPage) {
+    const allPages = await db.select().from(pages);
+    const maxOrder = allPages.length > 0 ? Math.max(...allPages.map((p) => p.order)) : -1;
+    const result = await db.insert(pages).values({
+      name: insertPage.name,
+      order: maxOrder + 1
+    }).returning();
+    return result[0];
+  }
+  async updatePage(id, pageUpdate) {
+    const result = await db.update(pages).set(pageUpdate).where(eq(pages.id, id)).returning();
+    return result[0];
+  }
+  async deletePage(id) {
+    await db.delete(pages).where(eq(pages.id, id));
+  }
+  async getRowsByPage(pageId) {
+    return await db.select().from(rows).where(eq(rows.pageId, pageId)).orderBy(rows.order);
+  }
+  async getRow(id) {
+    const result = await db.select().from(rows).where(eq(rows.id, id)).limit(1);
+    return result[0];
+  }
+  async createRow(insertRow) {
+    const pageRows = await db.select().from(rows).where(eq(rows.pageId, insertRow.pageId));
+    const maxOrder = pageRows.length > 0 ? Math.max(...pageRows.map((r) => r.order)) : -1;
+    const result = await db.insert(rows).values({
+      pageId: insertRow.pageId,
+      title: insertRow.title,
+      order: maxOrder + 1
+    }).returning();
+    return result[0];
+  }
+  async updateRow(id, rowUpdate) {
+    const result = await db.update(rows).set(rowUpdate).where(eq(rows.id, id)).returning();
+    return result[0];
+  }
+  async deleteRow(id) {
+    await db.delete(rows).where(eq(rows.id, id));
+  }
+  async getImagesByRow(rowId) {
+    return await db.select().from(images).where(eq(images.rowId, rowId)).orderBy(images.order);
+  }
+  async getImage(id) {
+    const result = await db.select().from(images).where(eq(images.id, id)).limit(1);
+    return result[0];
+  }
+  async createImage(insertImage) {
+    const rowImages = await db.select().from(images).where(eq(images.rowId, insertImage.rowId));
+    const maxOrder = rowImages.length > 0 ? Math.max(...rowImages.map((i) => i.order)) : -1;
+    const result = await db.insert(images).values({
+      rowId: insertImage.rowId,
+      url: insertImage.url,
+      title: insertImage.title,
+      subtitle: insertImage.subtitle,
+      order: maxOrder + 1
+    }).returning();
+    return result[0];
+  }
+  async updateImage(id, imageUpdate) {
+    const result = await db.update(images).set(imageUpdate).where(eq(images.id, id)).returning();
+    return result[0];
+  }
+  async deleteImage(id) {
+    await db.delete(images).where(eq(images.id, id));
+  }
+  async getShareLinkByCode(shortCode) {
+    const result = await db.select().from(shareLinks).where(eq(shareLinks.shortCode, shortCode)).limit(1);
+    return result[0];
+  }
+  async getShareLinkByPageId(pageId) {
+    const result = await db.select().from(shareLinks).where(eq(shareLinks.pageId, pageId)).limit(1);
+    return result[0];
+  }
+  async createShareLink(insertShareLink) {
+    const result = await db.insert(shareLinks).values({
+      shortCode: insertShareLink.shortCode,
+      pageId: insertShareLink.pageId
+    }).returning();
+    return result[0];
+  }
+};
+var storage = new DatabaseStorage();
 
 // server/routes.ts
 import { z } from "zod";
@@ -362,14 +337,18 @@ async function registerRoutes(app2) {
   });
   app2.post("/api/images", async (req, res) => {
     try {
+      console.log("POST /api/images - Request body:", req.body);
       const data = insertImageSchema.omit({ order: true }).parse(req.body);
+      console.log("Parsed data:", data);
       const image = await storage.createImage(data);
+      console.log("Created image:", image);
       res.status(201).json(image);
     } catch (error) {
+      console.error("Error creating image:", error);
       if (error instanceof z.ZodError) {
         return res.status(400).json({ error: "Invalid data", details: error.errors });
       }
-      res.status(500).json({ error: "Failed to create image" });
+      res.status(500).json({ error: "Failed to create image", details: String(error) });
     }
   });
   app2.patch("/api/images/:id", async (req, res) => {
