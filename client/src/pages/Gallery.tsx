@@ -31,8 +31,8 @@ export default function Gallery() {
   const { toast } = useToast();
   const [activePage, setActivePage] = useState<string>("");
   
-  const [addImageDialog, setAddImageDialog] = useState<{ open: boolean; rowId?: string }>({ open: false });
-  const [editImageDialog, setEditImageDialog] = useState<{ open: boolean; rowId?: string; imageId?: string }>({ open: false });
+  const [addImageDialog, setAddImageDialog] = useState({ open: false, rowId: "" });
+  const [editImageDialog, setEditImageDialog] = useState({ open: false, rowId: "", imageId: "" });
   const [deleteImageDialog, setDeleteImageDialog] = useState<{ open: boolean; rowId?: string; imageId?: string }>({ open: false });
   const [addRowDialog, setAddRowDialog] = useState(false);
   const [editRowDialog, setEditRowDialog] = useState<{ open: boolean; rowId?: string }>({ open: false });
@@ -194,31 +194,21 @@ export default function Gallery() {
 
   const createImageMutation = useMutation({
     mutationFn: async (data: { rowId: string; url: string; title: string; subtitle?: string }) => {
-      console.log('Creating image with data:', data);
-      return apiRequest("/api/images", "POST", {
-        rowId: data.rowId,
+      const result = await apiRequest(`/api/rows/${data.rowId}/images`, "POST", {
         url: data.url,
         title: data.title,
         subtitle: data.subtitle || null,
       });
+      return result;
     },
-    onSuccess: (newImage) => {
-      console.log('Image created successfully:', newImage);
-      // Invalidate all related queries to refresh the UI
-      queryClient.invalidateQueries({ queryKey: ["/api/pages"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/images"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/rows"] });
-      setAddImageDialog({ open: false });
-      toast({ title: "✅ Image added successfully", variant: "default" });
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/images", activePage] });
+      toast({ title: "Image added successfully" });
     },
-    onError: (error: any) => {
-      console.error('Failed to create image:', error);
-      toast({ 
-        title: "❌ Failed to add image", 
-        description: error?.message || "Please try again",
-        variant: "destructive" 
-      });
-    },
+    onError: (error) => {
+      console.error('createImageMutation error:', error);
+      toast({ title: "Failed to add image", description: String(error), variant: "destructive" });
+    }
   });
 
   const updateImageMutation = useMutation({
@@ -245,13 +235,13 @@ export default function Gallery() {
     },
   });
 
-  const handleAddImage = (rowId: string, data: { url: string; title: string; subtitle?: string }) => {
-    console.log('handleAddImage called with:', { rowId, data });
-    if (!rowId) {
-      toast({ title: "❌ Error", description: "No row selected", variant: "destructive" });
-      return;
+  const handleAddImage = (data: { url: string; title: string; subtitle?: string }) => {
+    if (addImageDialog.rowId) {
+      createImageMutation.mutate({ rowId: addImageDialog.rowId, ...data });
+      setAddImageDialog({ open: false, rowId: "" });
+    } else {
+      console.error('No rowId in addImageDialog');
     }
-    createImageMutation.mutate({ rowId, ...data });
   };
 
   const handleEditImage = (imageId: string, data: { url: string; title: string; subtitle?: string }) => {
@@ -520,18 +510,36 @@ export default function Gallery() {
                 title={row.title}
                 images={row.images}
                 onImageClick={(_, index) => handleImageClick(row.images, index)}
+                onAddImage={() => setAddImageDialog({ open: true, rowId: row.id })}
                 onEditRow={() => setEditRowDialog({ open: true, rowId: row.id })}
                 onDeleteRow={() => setDeleteRowDialog({ open: true, rowId: row.id })}
-                onAddImage={() => setAddImageDialog({ open: true, rowId: row.id })}
                 onEditImage={(imageId) => setEditImageDialog({ open: true, rowId: row.id, imageId })}
                 onDeleteImage={(imageId) => setDeleteImageDialog({ open: true, rowId: row.id, imageId })}
                 isDemo={DEMO_MODE}
               />
             ))}
-            <div className="py-8 px-8">
+            <div className="py-8 px-8 space-y-4">
               <Button onClick={() => setAddRowDialog(true)} variant="outline" className="w-full" data-testid="button-add-row">
                 <Plus className="w-4 h-4 mr-2" />
                 Add New Row
+              </Button>
+              
+              {/* Test Button for Upload */}
+              <Button 
+                onClick={() => {
+                  console.log('TEST: Forcing dialog open with first row');
+                  const firstRowId = rowsWithImages[0]?.id;
+                  if (firstRowId) {
+                    console.log('TEST: Opening dialog for row:', firstRowId);
+                    setAddImageDialog({ open: true, rowId: firstRowId });
+                  } else {
+                    console.log('TEST: No rows available');
+                  }
+                }} 
+                variant="destructive" 
+                className="w-full"
+              >
+                🧪 TEST: Force Open Upload Dialog
               </Button>
             </div>
           </>
@@ -554,21 +562,21 @@ export default function Gallery() {
 
       <AddImageDialog
         open={addImageDialog.open}
-        onOpenChange={(open) => setAddImageDialog({ open, rowId: open ? addImageDialog.rowId : undefined })}
-        onSubmit={(data) => addImageDialog.rowId && handleAddImage(addImageDialog.rowId, data)}
+        onOpenChange={(open) => setAddImageDialog({ ...addImageDialog, open })}
+        onSubmit={handleAddImage}
         isLoading={createImageMutation.isPending}
       />
 
       <EditImageDialog
         open={editImageDialog.open}
-        onOpenChange={(open) => setEditImageDialog({ open })}
+        onOpenChange={(open) => setEditImageDialog({ open, rowId: editImageDialog.rowId, imageId: editImageDialog.imageId })}
         onSubmit={(data) => editImageDialog.imageId && handleEditImage(editImageDialog.imageId, data)}
         initialData={currentEditImage}
       />
 
       <DeleteConfirmDialog
         open={deleteImageDialog.open}
-        onOpenChange={(open) => setDeleteImageDialog({ open })}
+        onOpenChange={(open) => setDeleteImageDialog({ ...deleteImageDialog, open })}
         onConfirm={() => {
           if (deleteImageDialog.imageId) {
             handleDeleteImage(deleteImageDialog.imageId);
@@ -587,7 +595,7 @@ export default function Gallery() {
 
       <EditRowDialog
         open={editRowDialog.open}
-        onOpenChange={(open) => setEditRowDialog({ open })}
+        onOpenChange={(open) => setEditRowDialog({ ...editRowDialog, open })}
         onSubmit={(title) => {
           if (editRowDialog.rowId) {
             handleEditRow(editRowDialog.rowId, title);
@@ -598,7 +606,7 @@ export default function Gallery() {
 
       <DeleteConfirmDialog
         open={deleteRowDialog.open}
-        onOpenChange={(open) => setDeleteRowDialog({ open })}
+        onOpenChange={(open) => setDeleteRowDialog({ ...deleteRowDialog, open })}
         onConfirm={() => {
           if (deleteRowDialog.rowId) {
             handleDeleteRow(deleteRowDialog.rowId);

@@ -1,4 +1,4 @@
-import { ChevronLeft, ChevronRight, Edit, Trash2, MoreVertical } from "lucide-react";
+import { ChevronLeft, ChevronRight, Edit, Trash2, MoreVertical, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { useRef, useState, useEffect } from "react";
@@ -20,9 +20,9 @@ interface HorizontalScrollRowProps {
   title: string;
   images: ImageItem[];
   onImageClick?: (image: ImageItem, index: number) => void;
+  onAddImage?: () => void;
   onEditRow?: () => void;
   onDeleteRow?: () => void;
-  onAddImage?: () => void;
   onEditImage?: (imageId: string) => void;
   onDeleteImage?: (imageId: string) => void;
   isPreviewMode?: boolean; // Hide all editing controls in preview
@@ -33,9 +33,9 @@ export function HorizontalScrollRow({
   title,
   images,
   onImageClick,
+  onAddImage,
   onEditRow,
   onDeleteRow,
-  onAddImage,
   onEditImage,
   onDeleteImage,
   isPreviewMode = false,
@@ -195,22 +195,21 @@ export function HorizontalScrollRow({
           </div>
         ))}
 
-        {!isPreviewMode && !isDemo && (
-          <div
-            className="flex-shrink-0 w-[200px] md:w-[240px] cursor-pointer"
-            onClick={onAddImage}
-            data-testid="button-add-image-card"
-          >
-            <Card className="aspect-square border-2 border-dashed glass-card transition-all duration-300 flex items-center justify-center border-white/20">
-              <div className="text-center">
-                <div className="w-12 h-12 rounded-full glass mx-auto mb-2 flex items-center justify-center">
-                  <span className="text-2xl text-foreground">+</span>
-                </div>
-                <p className="text-sm text-muted-foreground">Add Image</p>
-              </div>
-            </Card>
-          </div>
-        )}
+        <div
+          className="flex-shrink-0 w-[200px] md:w-[240px] cursor-pointer"
+          onClick={() => {
+            onAddImage?.();
+          }}
+          data-testid="button-add-image"
+        >
+          <Card className="h-[150px] md:h-[180px] glass-card border-dashed border-2 flex items-center justify-center hover:bg-muted/50 transition-colors">
+            <div className="text-center">
+              <Plus className="w-8 h-8 mx-auto mb-2 text-muted-foreground" />
+              <p className="text-sm text-muted-foreground">Add Image</p>
+            </div>
+          </Card>
+        </div>
+
       </div>
 
       <style>{`

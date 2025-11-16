@@ -9,9 +9,8 @@ const app = express();
 const log = console.log;
 
 function serveStatic(app: express.Application) {
-  // Static file serving handled by Vite in development
-  // or by the hosting provider in production
-  return;
+  // Serve uploaded files
+  app.use('/uploads', express.static('uploads'));
 }
 
 declare module 'http' {
@@ -75,6 +74,9 @@ app.use((req, res, next) => {
   } else {
     serveStatic(app);
   }
+  
+  // Always serve static uploads in both dev and production
+  app.use('/uploads', express.static('uploads'));
 
   // ALWAYS serve the app on the port specified in the environment variable PORT
   // Other ports are firewalled. Default to 5000 if not specified.

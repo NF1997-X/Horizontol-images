@@ -21,6 +21,24 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       return res.json(images);
     }
 
+    if (req.method === 'POST') {
+      // Create new image for this row
+      const { url, title, subtitle } = req.body;
+      
+      if (!url || !title) {
+        return res.status(400).json({ error: 'URL and title are required' });
+      }
+      
+      const image = await storage.createImage({
+        rowId: rowId as string,
+        url,
+        title,
+        subtitle: subtitle || null
+      });
+      
+      return res.status(201).json(image);
+    }
+
     return res.status(405).json({ error: 'Method not allowed' });
     
   } catch (error) {
