@@ -518,32 +518,6 @@ export default function Gallery() {
                 isDemo={DEMO_MODE}
               />
             ))}
-<<<<<<< HEAD
-            <div className="py-8 px-8 space-y-4">
-              <Button onClick={() => setAddRowDialog(true)} variant="outline" className="w-full" data-testid="button-add-row">
-                <Plus className="w-4 h-4 mr-2" />
-                Add New Row
-              </Button>
-              
-              {/* Test Button for Upload */}
-              <Button 
-                onClick={() => {
-                  console.log('TEST: Forcing dialog open with first row');
-                  const firstRowId = rowsWithImages[0]?.id;
-                  if (firstRowId) {
-                    console.log('TEST: Opening dialog for row:', firstRowId);
-                    setAddImageDialog({ open: true, rowId: firstRowId });
-                  } else {
-                    console.log('TEST: No rows available');
-                  }
-                }} 
-                variant="destructive" 
-                className="w-full"
-              >
-                🧪 TEST: Force Open Upload Dialog
-              </Button>
-            </div>
-=======
             {!DEMO_MODE && (
               <div className="py-8 px-8">
                 <Button onClick={() => setAddRowDialog(true)} variant="outline" className="w-full" data-testid="button-add-row">
@@ -552,7 +526,6 @@ export default function Gallery() {
                 </Button>
               </div>
             )}
->>>>>>> 34a1072db61dd6b5de522f28ed9c49b51bdd2518
           </>
         )}
       </main>

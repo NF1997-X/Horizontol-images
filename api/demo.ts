@@ -35,16 +35,7 @@ const DEMO_DATA = {
     { id: '9', rowId: '3', url: 'https://picsum.photos/400/300?random=9', title: 'Fresh Salad', subtitle: 'Healthy choice', order: 1, createdAt: new Date().toISOString() },
     { id: '10', rowId: '3', url: 'https://picsum.photos/400/300?random=10', title: 'Pizza Time', subtitle: 'Comfort food', order: 2, createdAt: new Date().toISOString() },
   ],
-<<<<<<< HEAD
-  shareLinks: [] as Array<{
-    id: string;
-    pageId: string;
-    shortCode: string;
-    createdAt: string;
-  }>
-=======
   shareLinks: [] as ShareLink[]
->>>>>>> 34a1072db61dd6b5de522f28ed9c49b51bdd2518
 };
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
