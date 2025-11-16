@@ -75,15 +75,12 @@ export function AddImageDialog({ open, onOpenChange, onSubmit, isLoading = false
   };
 
   const handleSubmit = async () => {
-    console.log('AddImageDialog handleSubmit called with mode:', mode);
     setErrors({});
     if (mode === "url") {
       try {
         const data = imageSchema.parse({ url, title, subtitle: subtitle || undefined });
-        console.log('URL mode - submitting data:', data);
         onSubmit(data);
       } catch (error) {
-        console.error('URL mode validation error:', error);
         if (error instanceof z.ZodError) {
           const fieldErrors: { url?: string; title?: string } = {};
           error.errors.forEach((err) => {
@@ -97,7 +94,6 @@ export function AddImageDialog({ open, onOpenChange, onSubmit, isLoading = false
     }
 
     // Upload mode
-    console.log('Upload mode - validating...');
     if (!title) {
       setErrors((prev) => ({ ...prev, title: "Title is required" }));
       return;
@@ -108,15 +104,11 @@ export function AddImageDialog({ open, onOpenChange, onSubmit, isLoading = false
     }
     try {
       setLocalLoading(true);
-      console.log('Uploading file:', file.name);
       const res = await uploadImage(file);
-      console.log('Upload response:', res);
       const finalUrl = res.url;
       const data = { url: finalUrl, title, subtitle: subtitle || undefined };
-      console.log('Upload mode - submitting data:', data);
       onSubmit(data);
     } catch (e: any) {
-      console.error('Upload error:', e);
       setErrors((prev) => ({ ...prev, url: e?.message || "Failed to upload image" }));
     } finally {
       setLocalLoading(false);

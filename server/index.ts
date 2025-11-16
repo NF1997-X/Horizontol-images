@@ -1,9 +1,17 @@
 import 'dotenv/config';
 import express, { type Request, Response, NextFunction } from "express";
 import { registerRoutes } from "./routes.js";
-import { setupVite, serveStatic, log } from "./vite.js";
+import { setupVite } from "./vite.js";
 
 const app = express();
+
+// Helper functions
+const log = console.log;
+
+function serveStatic(app: express.Application) {
+  // Serve uploaded files
+  app.use('/uploads', express.static('uploads'));
+}
 
 declare module 'http' {
   interface IncomingMessage {
@@ -66,6 +74,9 @@ app.use((req, res, next) => {
   } else {
     serveStatic(app);
   }
+  
+  // Always serve static uploads in both dev and production
+  app.use('/uploads', express.static('uploads'));
 
   // ALWAYS serve the app on the port specified in the environment variable PORT
   // Other ports are firewalled. Default to 5000 if not specified.

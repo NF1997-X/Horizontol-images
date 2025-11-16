@@ -14,6 +14,7 @@ import { EditPageDialog } from "@/components/EditPageDialog";
 import { useToast } from "@/hooks/use-toast";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient, apiRequest } from "@/lib/queryClient";
+import { DEMO_MODE, DEMO_CONFIG } from "@/lib/demo";
 import type { Page, Row, GalleryImage, ShareLink } from "@shared/schema";
 import LightGallery from "lightgallery/react";
 import lgThumbnail from "lightgallery/plugins/thumbnail";
@@ -30,8 +31,8 @@ export default function Gallery() {
   const { toast } = useToast();
   const [activePage, setActivePage] = useState<string>("");
   
-  const [addImageDialog, setAddImageDialog] = useState<{ open: boolean; rowId?: string }>({ open: false });
-  const [editImageDialog, setEditImageDialog] = useState<{ open: boolean; rowId?: string; imageId?: string }>({ open: false });
+  const [addImageDialog, setAddImageDialog] = useState({ open: false, rowId: "" });
+  const [editImageDialog, setEditImageDialog] = useState({ open: false, rowId: "", imageId: "" });
   const [deleteImageDialog, setDeleteImageDialog] = useState<{ open: boolean; rowId?: string; imageId?: string }>({ open: false });
   const [addRowDialog, setAddRowDialog] = useState(false);
   const [editRowDialog, setEditRowDialog] = useState<{ open: boolean; rowId?: string }>({ open: false });
@@ -45,13 +46,33 @@ export default function Gallery() {
   const [lightboxIndex, setLightboxIndex] = useState(0);
 
   const { data: pages = [], isLoading: pagesLoading } = useQuery<Page[]>({
-    queryKey: ["/api/pages"],
+    queryKey: [DEMO_MODE ? "/api/demo" : "/api/pages"],
+    queryFn: async () => {
+      if (DEMO_MODE) {
+        // Return static demo data
+        return [{ id: "demo-page-1", name: "Demo Gallery", order: 0 }];
+      }
+      
+      const response = await fetch("/api/pages");
+      if (!response.ok) throw new Error("Failed to fetch pages");
+      return response.json();
+    },
   });
 
   const { data: rows = [], isLoading: rowsLoading } = useQuery<Row[]>({
     queryKey: ["/api/pages", activePage, "rows"],
     queryFn: async () => {
       if (!activePage) return [];
+      
+      if (DEMO_MODE) {
+        // Return static demo rows
+        return [
+          { id: "demo-row-1", pageId: "demo-page-1", title: "Nature Photos", order: 0 },
+          { id: "demo-row-2", pageId: "demo-page-1", title: "City Life", order: 1 },
+          { id: "demo-row-3", pageId: "demo-page-1", title: "Food & Drinks", order: 2 }
+        ];
+      }
+      
       const response = await fetch(`/api/pages/${activePage}/rows`);
       if (!response.ok) throw new Error("Failed to fetch rows");
       return response.json();
@@ -62,6 +83,27 @@ export default function Gallery() {
   const { data: allImages = [] } = useQuery<GalleryImage[]>({
     queryKey: ["/api/images", activePage],
     queryFn: async () => {
+      if (DEMO_MODE) {
+        // Return static demo images
+        return [
+          // Nature Photos
+          { id: "demo-img-1", rowId: "demo-row-1", url: "https://picsum.photos/800/600?random=1", title: "Mountain Lake", subtitle: "Beautiful landscape", order: 0 },
+          { id: "demo-img-2", rowId: "demo-row-1", url: "https://picsum.photos/800/600?random=2", title: "Forest Path", subtitle: "Peaceful walk", order: 1 },
+          { id: "demo-img-3", rowId: "demo-row-1", url: "https://picsum.photos/800/600?random=3", title: "Ocean Sunset", subtitle: "Relaxing sounds", order: 2 },
+          { id: "demo-img-4", rowId: "demo-row-1", url: "https://picsum.photos/800/600?random=4", title: "Desert Dunes", subtitle: "Golden hour", order: 3 },
+          
+          // City Life
+          { id: "demo-img-5", rowId: "demo-row-2", url: "https://picsum.photos/800/600?random=5", title: "City Skyline", subtitle: "Urban beauty", order: 0 },
+          { id: "demo-img-6", rowId: "demo-row-2", url: "https://picsum.photos/800/600?random=6", title: "Street Art", subtitle: "Creative walls", order: 1 },
+          { id: "demo-img-7", rowId: "demo-row-2", url: "https://picsum.photos/800/600?random=7", title: "Night Lights", subtitle: "City never sleeps", order: 2 },
+          
+          // Food & Drinks
+          { id: "demo-img-8", rowId: "demo-row-3", url: "https://picsum.photos/800/600?random=8", title: "Coffee Break", subtitle: "Morning fuel", order: 0 },
+          { id: "demo-img-9", rowId: "demo-row-3", url: "https://picsum.photos/800/600?random=9", title: "Fresh Salad", subtitle: "Healthy choice", order: 1 },
+          { id: "demo-img-10", rowId: "demo-row-3", url: "https://picsum.photos/800/600?random=10", title: "Pizza Time", subtitle: "Comfort food", order: 2 }
+        ];
+      }
+      
       const imagePromises = rows.map((row) =>
         fetch(`/api/rows/${row.id}/images`).then((res) => res.json())
       );
@@ -152,31 +194,21 @@ export default function Gallery() {
 
   const createImageMutation = useMutation({
     mutationFn: async (data: { rowId: string; url: string; title: string; subtitle?: string }) => {
-      console.log('Creating image with data:', data);
-      return apiRequest("/api/images", "POST", {
-        rowId: data.rowId,
+      const result = await apiRequest(`/api/rows/${data.rowId}/images`, "POST", {
         url: data.url,
         title: data.title,
         subtitle: data.subtitle || null,
       });
+      return result;
     },
-    onSuccess: (newImage) => {
-      console.log('Image created successfully:', newImage);
-      // Invalidate all related queries to refresh the UI
-      queryClient.invalidateQueries({ queryKey: ["/api/pages"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/images"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/rows"] });
-      setAddImageDialog({ open: false });
-      toast({ title: "✅ Image added successfully", variant: "default" });
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/images", activePage] });
+      toast({ title: "Image added successfully" });
     },
-    onError: (error: any) => {
-      console.error('Failed to create image:', error);
-      toast({ 
-        title: "❌ Failed to add image", 
-        description: error?.message || "Please try again",
-        variant: "destructive" 
-      });
-    },
+    onError: (error) => {
+      console.error('createImageMutation error:', error);
+      toast({ title: "Failed to add image", description: String(error), variant: "destructive" });
+    }
   });
 
   const updateImageMutation = useMutation({
@@ -203,13 +235,13 @@ export default function Gallery() {
     },
   });
 
-  const handleAddImage = (rowId: string, data: { url: string; title: string; subtitle?: string }) => {
-    console.log('handleAddImage called with:', { rowId, data });
-    if (!rowId) {
-      toast({ title: "❌ Error", description: "No row selected", variant: "destructive" });
-      return;
+  const handleAddImage = (data: { url: string; title: string; subtitle?: string }) => {
+    if (addImageDialog.rowId) {
+      createImageMutation.mutate({ rowId: addImageDialog.rowId, ...data });
+      setAddImageDialog({ open: false, rowId: "" });
+    } else {
+      console.error('No rowId in addImageDialog');
     }
-    createImageMutation.mutate({ rowId, ...data });
   };
 
   const handleEditImage = (imageId: string, data: { url: string; title: string; subtitle?: string }) => {
@@ -442,6 +474,7 @@ export default function Gallery() {
         onDeletePage={(pageId) => setDeletePageDialog({ open: true, pageId })}
         onCopyLink={handleCopyLink}
         onOpenPreview={handleOpenPreview}
+        isDemo={DEMO_MODE}
       />
 
       <main className="max-w-7xl mx-auto">
@@ -457,10 +490,17 @@ export default function Gallery() {
             </div>
             <h2 className="text-lg font-semibold mb-2">No rows yet</h2>
             <p className="text-muted-foreground mb-6">Create your first row to start adding images</p>
-            <Button onClick={() => setAddRowDialog(true)} data-testid="button-create-first-row">
-              <Plus className="w-4 h-4 mr-2" />
-              Create Row
-            </Button>
+            {!DEMO_MODE && (
+              <Button onClick={() => setAddRowDialog(true)} data-testid="button-create-first-row">
+                <Plus className="w-4 h-4 mr-2" />
+                Create Row
+              </Button>
+            )}
+            {DEMO_MODE && (
+              <div className="glass px-6 py-3 rounded-full bg-orange-500/20 text-orange-600 dark:text-orange-400 font-medium">
+                🚀 Demo Mode - Static Gallery Data
+              </div>
+            )}
           </div>
         ) : (
           <>
@@ -470,19 +510,22 @@ export default function Gallery() {
                 title={row.title}
                 images={row.images}
                 onImageClick={(_, index) => handleImageClick(row.images, index)}
+                onAddImage={() => setAddImageDialog({ open: true, rowId: row.id })}
                 onEditRow={() => setEditRowDialog({ open: true, rowId: row.id })}
                 onDeleteRow={() => setDeleteRowDialog({ open: true, rowId: row.id })}
-                onAddImage={() => setAddImageDialog({ open: true, rowId: row.id })}
                 onEditImage={(imageId) => setEditImageDialog({ open: true, rowId: row.id, imageId })}
                 onDeleteImage={(imageId) => setDeleteImageDialog({ open: true, rowId: row.id, imageId })}
+                isDemo={DEMO_MODE}
               />
             ))}
-            <div className="py-8 px-8">
-              <Button onClick={() => setAddRowDialog(true)} variant="outline" className="w-full" data-testid="button-add-row">
-                <Plus className="w-4 h-4 mr-2" />
-                Add New Row
-              </Button>
-            </div>
+            {!DEMO_MODE && (
+              <div className="py-8 px-8">
+                <Button onClick={() => setAddRowDialog(true)} variant="outline" className="w-full" data-testid="button-add-row">
+                  <Plus className="w-4 h-4 mr-2" />
+                  Add New Row
+                </Button>
+              </div>
+            )}
           </>
         )}
       </main>
@@ -503,21 +546,21 @@ export default function Gallery() {
 
       <AddImageDialog
         open={addImageDialog.open}
-        onOpenChange={(open) => setAddImageDialog({ open, rowId: open ? addImageDialog.rowId : undefined })}
-        onSubmit={(data) => addImageDialog.rowId && handleAddImage(addImageDialog.rowId, data)}
+        onOpenChange={(open) => setAddImageDialog({ ...addImageDialog, open })}
+        onSubmit={handleAddImage}
         isLoading={createImageMutation.isPending}
       />
 
       <EditImageDialog
         open={editImageDialog.open}
-        onOpenChange={(open) => setEditImageDialog({ open })}
+        onOpenChange={(open) => setEditImageDialog({ open, rowId: editImageDialog.rowId, imageId: editImageDialog.imageId })}
         onSubmit={(data) => editImageDialog.imageId && handleEditImage(editImageDialog.imageId, data)}
         initialData={currentEditImage}
       />
 
       <DeleteConfirmDialog
         open={deleteImageDialog.open}
-        onOpenChange={(open) => setDeleteImageDialog({ open })}
+        onOpenChange={(open) => setDeleteImageDialog({ ...deleteImageDialog, open })}
         onConfirm={() => {
           if (deleteImageDialog.imageId) {
             handleDeleteImage(deleteImageDialog.imageId);
@@ -536,7 +579,7 @@ export default function Gallery() {
 
       <EditRowDialog
         open={editRowDialog.open}
-        onOpenChange={(open) => setEditRowDialog({ open })}
+        onOpenChange={(open) => setEditRowDialog({ ...editRowDialog, open })}
         onSubmit={(title) => {
           if (editRowDialog.rowId) {
             handleEditRow(editRowDialog.rowId, title);
@@ -547,7 +590,7 @@ export default function Gallery() {
 
       <DeleteConfirmDialog
         open={deleteRowDialog.open}
-        onOpenChange={(open) => setDeleteRowDialog({ open })}
+        onOpenChange={(open) => setDeleteRowDialog({ ...deleteRowDialog, open })}
         onConfirm={() => {
           if (deleteRowDialog.rowId) {
             handleDeleteRow(deleteRowDialog.rowId);

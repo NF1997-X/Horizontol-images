@@ -1,6 +1,8 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import Busboy from 'busboy';
-import { uploadToCloudinary } from '../server/cloudinary.js';
+import { writeFile, mkdir } from 'fs/promises';
+import { join } from 'path';
+import { randomUUID } from 'crypto';
 
 export const config = {
   api: {
@@ -59,22 +61,33 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       return res.status(400).json({ error: 'Only image uploads are allowed' });
     }
 
-    console.log('📁 Uploading to Cloudinary:', file.filename, `(${Math.round(file.buffer.length / 1024)}KB)`);
+    console.log('📁 Saving file locally:', file.filename, `(${Math.round(file.buffer.length / 1024)}KB)`);
 
-    // Upload to Cloudinary instead of local filesystem
-    const cloudinaryUrl = await uploadToCloudinary(file.buffer, file.filename);
+    // Create uploads directory
+    const uploadsDir = join(process.cwd(), 'uploads');
+    await mkdir(uploadsDir, { recursive: true });
+
+    // Generate unique filename
+    const fileExtension = file.filename.split('.').pop() || 'jpg';
+    const uniqueFilename = `${file.filename.replace(/\.[^/.]+$/, "")}-${Date.now()}-${randomUUID().slice(0, 8)}.${fileExtension}`;
+    const filePath = join(uploadsDir, uniqueFilename);
+
+    // Save file to disk
+    await writeFile(filePath, file.buffer);
+
+    const fileUrl = `/uploads/${uniqueFilename}`;
     
-    console.log('✅ Cloudinary upload successful:', cloudinaryUrl);
+    console.log('✅ File saved successfully:', fileUrl);
     
     return res.status(201).json({ 
-      url: cloudinaryUrl, 
-      pathname: cloudinaryUrl,
-      message: 'Image uploaded to cloud storage successfully' 
+      url: fileUrl,
+      pathname: fileUrl,
+      message: 'Image uploaded successfully' 
     });
   } catch (error: any) {
-    console.error('❌ Upload API error:', error);
+    console.error('❌ Upload error:', error);
     return res.status(500).json({ 
-      error: 'Failed to upload image to cloud storage', 
+      error: 'Failed to upload image', 
       details: String(error?.message || error) 
     });
   }
