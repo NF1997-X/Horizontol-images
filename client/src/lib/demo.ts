@@ -1,5 +1,5 @@
 // Demo mode configuration
-export const DEMO_MODE = true; // Set to false when database is working
+export const DEMO_MODE = false; // Set to false when database is working
 
 // API base URL helper  
 export function getApiUrl(endpoint: string): string {

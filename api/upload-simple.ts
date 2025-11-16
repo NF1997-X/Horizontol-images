@@ -12,7 +12,7 @@ const CLOUDINARY_URL = `https://api.cloudinary.com/v1_1/dp64jhxlm/image/upload`;
 
 async function uploadToCloudinarySimple(buffer: Buffer): Promise<string> {
   const formData = new FormData();
-  formData.append('file', new Blob([buffer]));
+  formData.append('file', new Blob([new Uint8Array(buffer)]));
   formData.append('upload_preset', 'gallery_preset'); // You need to create this in Cloudinary
   formData.append('folder', 'gallery-images');
 

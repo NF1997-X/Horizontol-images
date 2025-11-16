@@ -1,9 +1,18 @@
 import 'dotenv/config';
 import express, { type Request, Response, NextFunction } from "express";
 import { registerRoutes } from "./routes.js";
-import { setupVite, serveStatic, log } from "./vite.js";
+import { setupVite } from "./vite.js";
 
 const app = express();
+
+// Helper functions
+const log = console.log;
+
+function serveStatic(app: express.Application) {
+  // Static file serving handled by Vite in development
+  // or by the hosting provider in production
+  return;
+}
 
 declare module 'http' {
   interface IncomingMessage {
