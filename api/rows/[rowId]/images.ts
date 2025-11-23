@@ -29,6 +29,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         return res.status(400).json({ error: 'URL and title are required' });
       }
       
+      // Check if row exists
+      const row = await storage.getRow(rowId as string);
+      if (!row) {
+        return res.status(404).json({ error: 'Row not found' });
+      }
+      
       const image = await storage.createImage({
         rowId: rowId as string,
         url,
