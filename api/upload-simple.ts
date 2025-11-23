@@ -1,14 +1,15 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import Busboy from 'busboy';
 
-const IMGBB_API_KEY = process.env.IMGBB_API_KEY || '4042c537845e8b19b443add46f4a859c';
-const IMGBB_URL = `https://api.imgbb.com/1/upload?key=${IMGBB_API_KEY}`;
-
+// ImgBB upload
 export const config = {
   api: {
     bodyParser: false,
   },
 };
+
+const IMGBB_API_KEY = process.env.IMGBB_API_KEY || '4042c537845e8b19b443add46f4a859c';
+const IMGBB_URL = `https://api.imgbb.com/1/upload?key=${IMGBB_API_KEY}`;
 
 async function uploadToImgBB(buffer: Buffer): Promise<string> {
   const base64Image = buffer.toString('base64');
@@ -22,8 +23,7 @@ async function uploadToImgBB(buffer: Buffer): Promise<string> {
     });
 
     if (!response.ok) {
-      const errorText = await response.text();
-      throw new Error(`ImgBB upload failed: ${response.statusText} - ${errorText}`);
+      throw new Error(`ImgBB upload failed: ${response.statusText}`);
     }
 
     const result = await response.json();
@@ -88,15 +88,15 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       return res.status(400).json({ error: 'Only image uploads are allowed' });
     }
 
-    console.log('📁 Uploading to ImgBB:', file.filename, `(${Math.round(file.buffer.length / 1024)}KB)`);
+    console.log('📁 Uploading to ImgBB:', file.filename);
 
     // Upload to ImgBB
     const imgbbUrl = await uploadToImgBB(file.buffer);
-
+    
     console.log('✅ ImgBB upload successful:', imgbbUrl);
     
     return res.status(201).json({ 
-      url: imgbbUrl,
+      url: imgbbUrl, 
       pathname: imgbbUrl,
       message: 'Image uploaded successfully to ImgBB' 
     });

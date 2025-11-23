@@ -475,15 +475,6 @@ var vite_config_default = defineConfig({
 // server/vite.ts
 import { nanoid } from "nanoid";
 var viteLogger = createLogger();
-function log(message, source = "express") {
-  const formattedTime = (/* @__PURE__ */ new Date()).toLocaleTimeString("en-US", {
-    hour: "numeric",
-    minute: "2-digit",
-    second: "2-digit",
-    hour12: true
-  });
-  console.log(`${formattedTime} [${source}] ${message}`);
-}
 async function setupVite(app2, server) {
   const serverOptions = {
     middlewareMode: true,
@@ -526,21 +517,13 @@ async function setupVite(app2, server) {
     }
   });
 }
-function serveStatic(app2) {
-  const distPath = path3.resolve(import.meta.dirname, "public");
-  if (!fs2.existsSync(distPath)) {
-    throw new Error(
-      `Could not find the build directory: ${distPath}, make sure to build the client first`
-    );
-  }
-  app2.use(express.static(distPath));
-  app2.use("*", (_req, res) => {
-    res.sendFile(path3.resolve(distPath, "index.html"));
-  });
-}
 
 // server/index.ts
 var app = express2();
+var log = console.log;
+function serveStatic(app2) {
+  app2.use("/uploads", express2.static("uploads"));
+}
 app.use(express2.json({
   verify: (req, _res, buf) => {
     req.rawBody = buf;
@@ -584,6 +567,7 @@ app.use((req, res, next) => {
   } else {
     serveStatic(app);
   }
+  app.use("/uploads", express2.static("uploads"));
   const port = parseInt(process.env.PORT || "5000", 10);
   server.listen({
     port,
