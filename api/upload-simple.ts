@@ -1,13 +1,14 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import Busboy from 'busboy';
 
-const IMGBB_API_KEY = process.env.IMGBB_API_KEY || '4042c537845e8b19b443add46f4a859c';
-
+// ImgBB upload
 export const config = {
   api: {
     bodyParser: false,
   },
 };
+
+const IMGBB_API_KEY = process.env.IMGBB_API_KEY || '4042c537845e8b19b443add46f4a859c';
 
 async function uploadToImgBB(buffer: Buffer): Promise<string> {
   const base64Image = buffer.toString('base64');
@@ -18,7 +19,6 @@ async function uploadToImgBB(buffer: Buffer): Promise<string> {
   formData.append('image', base64Image);
 
   try {
-    console.log('📤 Uploading to ImgBB...');
     const response = await fetch('https://api.imgbb.com/1/upload', {
       method: 'POST',
       headers: {
@@ -28,7 +28,6 @@ async function uploadToImgBB(buffer: Buffer): Promise<string> {
     });
 
     const result = await response.json();
-    console.log('ImgBB response:', result);
 
     if (!response.ok || !result.success) {
       const errorMsg = result.error?.message || response.statusText;
@@ -36,12 +35,11 @@ async function uploadToImgBB(buffer: Buffer): Promise<string> {
     }
 
     if (result.data && result.data.url) {
-      console.log('✅ Upload successful:', result.data.url);
       return result.data.url;
     }
     throw new Error('ImgBB response missing URL');
   } catch (error) {
-    console.error('❌ ImgBB upload error:', error);
+    console.error('ImgBB upload error:', error);
     throw error;
   }
 }
@@ -97,15 +95,15 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       return res.status(400).json({ error: 'Only image uploads are allowed' });
     }
 
-    console.log('📁 Uploading to ImgBB:', file.filename, `(${Math.round(file.buffer.length / 1024)}KB)`);
+    console.log('📁 Uploading to ImgBB:', file.filename);
 
     // Upload to ImgBB
     const imgbbUrl = await uploadToImgBB(file.buffer);
-
+    
     console.log('✅ ImgBB upload successful:', imgbbUrl);
     
     return res.status(201).json({ 
-      url: imgbbUrl,
+      url: imgbbUrl, 
       pathname: imgbbUrl,
       message: 'Image uploaded successfully to ImgBB' 
     });

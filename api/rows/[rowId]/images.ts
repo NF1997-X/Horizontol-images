@@ -21,6 +21,35 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       return res.json(images);
     }
 
+    if (req.method === 'POST') {
+      // Create new image for this row
+      const { url, title, subtitle } = req.body;
+      
+      if (!url || !title) {
+        return res.status(400).json({ error: 'URL and title are required' });
+      }
+      
+      // Check if row exists, if not return helpful error
+      const row = await storage.getRow(rowId as string);
+      if (!row) {
+        console.error(`Row ${rowId} not found. Available rows need to be created first.`);
+        return res.status(404).json({ 
+          error: 'Row not found',
+          message: 'Please create a page and row first before adding images.',
+          rowId: rowId
+        });
+      }
+      
+      const image = await storage.createImage({
+        rowId: rowId as string,
+        url,
+        title,
+        subtitle: subtitle || null
+      });
+      
+      return res.status(201).json(image);
+    }
+
     return res.status(405).json({ error: 'Method not allowed' });
     
   } catch (error) {

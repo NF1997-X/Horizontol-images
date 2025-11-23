@@ -23,9 +23,10 @@ interface PageTabsProps {
   onDeletePage: (pageId: string) => void;
   onCopyLink: (pageId: string) => void;
   onOpenPreview: (pageId: string) => void;
+  isDemo?: boolean;
 }
 
-export function PageTabs({ pages, activePage, onPageChange, onAddPage, onEditPage, onDeletePage, onCopyLink, onOpenPreview }: PageTabsProps) {
+export function PageTabs({ pages, activePage, onPageChange, onAddPage, onEditPage, onDeletePage, onCopyLink, onOpenPreview, isDemo = false }: PageTabsProps) {
   return (
     <div className="border-b border-border bg-card">
       <div className="max-w-7xl mx-auto px-8 flex items-center gap-4">
@@ -62,22 +63,26 @@ export function PageTabs({ pages, activePage, onPageChange, onAddPage, onEditPag
                       <ExternalLink className="w-4 h-4 mr-2" />
                       Open Preview
                     </DropdownMenuItem>
-                    <DropdownMenuSeparator />
-                    <DropdownMenuItem onClick={() => onEditPage(page.id)} data-testid={`menu-item-edit-${page.id}`}>
-                      <Edit2 className="w-4 h-4 mr-2" />
-                      Rename
-                    </DropdownMenuItem>
-                    {pages.length > 1 && (
+                    {!isDemo && (
                       <>
                         <DropdownMenuSeparator />
-                        <DropdownMenuItem 
-                          onClick={() => onDeletePage(page.id)} 
-                          className="text-destructive focus:text-destructive"
-                          data-testid={`menu-item-delete-${page.id}`}
-                        >
-                          <Trash2 className="w-4 h-4 mr-2" />
-                          Delete
+                        <DropdownMenuItem onClick={() => onEditPage(page.id)} data-testid={`menu-item-edit-${page.id}`}>
+                          <Edit2 className="w-4 h-4 mr-2" />
+                          Rename
                         </DropdownMenuItem>
+                        {pages.length > 1 && (
+                          <>
+                            <DropdownMenuSeparator />
+                            <DropdownMenuItem 
+                              onClick={() => onDeletePage(page.id)} 
+                              className="text-destructive focus:text-destructive"
+                              data-testid={`menu-item-delete-${page.id}`}
+                            >
+                              <Trash2 className="w-4 h-4 mr-2" />
+                              Delete
+                            </DropdownMenuItem>
+                          </>
+                        )}
                       </>
                     )}
                   </DropdownMenuContent>
@@ -87,15 +92,22 @@ export function PageTabs({ pages, activePage, onPageChange, onAddPage, onEditPag
           </div>
           <ScrollBar orientation="horizontal" />
         </ScrollArea>
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={onAddPage}
-          className="flex-shrink-0 w-8 h-8 rounded-full"
-          data-testid="button-add-page-tab"
-        >
-          <Plus className="w-4 h-4" />
-        </Button>
+        {!isDemo && (
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={onAddPage}
+            className="flex-shrink-0 w-8 h-8 rounded-full"
+            data-testid="button-add-page-tab"
+          >
+            <Plus className="w-4 h-4" />
+          </Button>
+        )}
+        {isDemo && (
+          <div className="flex-shrink-0 bg-gradient-to-r from-orange-500/20 to-red-500/20 backdrop-blur-sm border border-orange-500/20 rounded-full px-3 py-1 text-xs font-medium text-orange-600 dark:text-orange-400">
+            🚀 DEMO MODE
+          </div>
+        )}
       </div>
     </div>
   );
