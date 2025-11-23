@@ -29,10 +29,15 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         return res.status(400).json({ error: 'URL and title are required' });
       }
       
-      // Check if row exists
+      // Check if row exists, if not return helpful error
       const row = await storage.getRow(rowId as string);
       if (!row) {
-        return res.status(404).json({ error: 'Row not found' });
+        console.error(`Row ${rowId} not found. Available rows need to be created first.`);
+        return res.status(404).json({ 
+          error: 'Row not found',
+          message: 'Please create a page and row first before adding images.',
+          rowId: rowId
+        });
       }
       
       const image = await storage.createImage({
