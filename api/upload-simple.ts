@@ -9,25 +9,32 @@ export const config = {
 };
 
 const IMGBB_API_KEY = process.env.IMGBB_API_KEY || '4042c537845e8b19b443add46f4a859c';
-const IMGBB_URL = `https://api.imgbb.com/1/upload?key=${IMGBB_API_KEY}`;
 
 async function uploadToImgBB(buffer: Buffer): Promise<string> {
   const base64Image = buffer.toString('base64');
-  const formData = new FormData();
+  
+  // Use URLSearchParams for form data
+  const formData = new URLSearchParams();
+  formData.append('key', IMGBB_API_KEY);
   formData.append('image', base64Image);
 
   try {
-    const response = await fetch(IMGBB_URL, {
+    const response = await fetch('https://api.imgbb.com/1/upload', {
       method: 'POST',
-      body: formData,
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded',
+      },
+      body: formData.toString(),
     });
 
-    if (!response.ok) {
-      throw new Error(`ImgBB upload failed: ${response.statusText}`);
+    const result = await response.json();
+
+    if (!response.ok || !result.success) {
+      const errorMsg = result.error?.message || response.statusText;
+      throw new Error(`ImgBB upload failed: ${errorMsg}`);
     }
 
-    const result = await response.json();
-    if (result.success && result.data && result.data.url) {
+    if (result.data && result.data.url) {
       return result.data.url;
     }
     throw new Error('ImgBB response missing URL');

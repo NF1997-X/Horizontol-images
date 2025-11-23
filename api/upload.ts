@@ -2,7 +2,6 @@ import type { VercelRequest, VercelResponse } from '@vercel/node';
 import Busboy from 'busboy';
 
 const IMGBB_API_KEY = process.env.IMGBB_API_KEY || '4042c537845e8b19b443add46f4a859c';
-const IMGBB_URL = `https://api.imgbb.com/1/upload?key=${IMGBB_API_KEY}`;
 
 export const config = {
   api: {
@@ -12,27 +11,37 @@ export const config = {
 
 async function uploadToImgBB(buffer: Buffer): Promise<string> {
   const base64Image = buffer.toString('base64');
-  const formData = new FormData();
+  
+  // Use URLSearchParams for form data
+  const formData = new URLSearchParams();
+  formData.append('key', IMGBB_API_KEY);
   formData.append('image', base64Image);
 
   try {
-    const response = await fetch(IMGBB_URL, {
+    console.log('📤 Uploading to ImgBB...');
+    const response = await fetch('https://api.imgbb.com/1/upload', {
       method: 'POST',
-      body: formData,
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded',
+      },
+      body: formData.toString(),
     });
 
-    if (!response.ok) {
-      const errorText = await response.text();
-      throw new Error(`ImgBB upload failed: ${response.statusText} - ${errorText}`);
+    const result = await response.json();
+    console.log('ImgBB response:', result);
+
+    if (!response.ok || !result.success) {
+      const errorMsg = result.error?.message || response.statusText;
+      throw new Error(`ImgBB upload failed: ${errorMsg}`);
     }
 
-    const result = await response.json();
-    if (result.success && result.data && result.data.url) {
+    if (result.data && result.data.url) {
+      console.log('✅ Upload successful:', result.data.url);
       return result.data.url;
     }
     throw new Error('ImgBB response missing URL');
   } catch (error) {
-    console.error('ImgBB upload error:', error);
+    console.error('❌ ImgBB upload error:', error);
     throw error;
   }
 }
