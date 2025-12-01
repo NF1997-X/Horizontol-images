@@ -245,25 +245,31 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/share-links/:pageId", async (req, res) => {
     try {
       const pageId = req.params.pageId;
+      console.log('📝 Creating share link for pageId:', pageId);
       
       // Check if page exists
       const page = await storage.getPage(pageId);
       if (!page) {
+        console.error('❌ Page not found:', pageId);
         return res.status(404).json({ error: "Page not found" });
       }
 
       // Check if share link already exists for this page
       const existingLink = await storage.getShareLinkByPageId(pageId);
       if (existingLink) {
+        console.log('✅ Using existing share link:', existingLink.shortCode);
         return res.json(existingLink);
       }
 
       // Generate short code (8 characters)
       const shortCode = randomBytes(4).toString('hex');
+      console.log('🔑 Generated shortCode:', shortCode);
       const data = insertShareLinkSchema.parse({ shortCode, pageId });
       const shareLink = await storage.createShareLink(data);
+      console.log('✅ Share link created successfully:', shareLink);
       res.status(201).json(shareLink);
     } catch (error) {
+      console.error('❌ Share link creation error:', error);
       if (error instanceof z.ZodError) {
         return res.status(400).json({ error: "Invalid data", details: error.errors });
       }
@@ -273,12 +279,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get("/api/share-links/:shortCode", async (req, res) => {
     try {
-      const shareLink = await storage.getShareLinkByCode(req.params.shortCode);
+      const shortCode = req.params.shortCode;
+      console.log('🔍 Looking up share link for shortCode:', shortCode);
+      const shareLink = await storage.getShareLinkByCode(shortCode);
       if (!shareLink) {
+        console.error('❌ Share link not found:', shortCode);
         return res.status(404).json({ error: "Share link not found" });
       }
+      console.log('✅ Share link found:', shareLink);
       res.json(shareLink);
     } catch (error) {
+      console.error('❌ Error fetching share link:', error);
       res.status(500).json({ error: "Failed to fetch share link" });
     }
   });

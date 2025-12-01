@@ -386,13 +386,18 @@ export default function Gallery() {
 
   const handleOpenPreview = async (pageId: string) => {
     try {
+      console.log('🔍 Opening preview for pageId:', pageId);
       const shareLink: ShareLink = await apiRequest(`/api/share-links/${pageId}`, "POST");
+      console.log('✅ Share link created:', shareLink);
       const baseUrl = window.location.origin;
       const shareUrl = `${baseUrl}/preview/${shareLink.shortCode}`;
+      console.log('🌐 Opening URL:', shareUrl);
       window.open(shareUrl, '_blank');
     } catch (error) {
+      console.error('❌ Preview error:', error);
       toast({ 
         title: "Failed to open preview", 
+        description: error instanceof Error ? error.message : "Please try again",
         variant: "destructive" 
       });
     }

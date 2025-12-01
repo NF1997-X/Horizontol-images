@@ -394,19 +394,25 @@ async function registerRoutes(app2) {
   app2.post("/api/share-links/:pageId", async (req, res) => {
     try {
       const pageId = req.params.pageId;
+      console.log("\u{1F4DD} Creating share link for pageId:", pageId);
       const page = await storage.getPage(pageId);
       if (!page) {
+        console.error("\u274C Page not found:", pageId);
         return res.status(404).json({ error: "Page not found" });
       }
       const existingLink = await storage.getShareLinkByPageId(pageId);
       if (existingLink) {
+        console.log("\u2705 Using existing share link:", existingLink.shortCode);
         return res.json(existingLink);
       }
       const shortCode = randomBytes(4).toString("hex");
+      console.log("\u{1F511} Generated shortCode:", shortCode);
       const data = insertShareLinkSchema.parse({ shortCode, pageId });
       const shareLink = await storage.createShareLink(data);
+      console.log("\u2705 Share link created successfully:", shareLink);
       res.status(201).json(shareLink);
     } catch (error) {
+      console.error("\u274C Share link creation error:", error);
       if (error instanceof z.ZodError) {
         return res.status(400).json({ error: "Invalid data", details: error.errors });
       }
@@ -415,12 +421,17 @@ async function registerRoutes(app2) {
   });
   app2.get("/api/share-links/:shortCode", async (req, res) => {
     try {
-      const shareLink = await storage.getShareLinkByCode(req.params.shortCode);
+      const shortCode = req.params.shortCode;
+      console.log("\u{1F50D} Looking up share link for shortCode:", shortCode);
+      const shareLink = await storage.getShareLinkByCode(shortCode);
       if (!shareLink) {
+        console.error("\u274C Share link not found:", shortCode);
         return res.status(404).json({ error: "Share link not found" });
       }
+      console.log("\u2705 Share link found:", shareLink);
       res.json(shareLink);
     } catch (error) {
+      console.error("\u274C Error fetching share link:", error);
       res.status(500).json({ error: "Failed to fetch share link" });
     }
   });
@@ -462,7 +473,27 @@ var vite_config_default = defineConfig({
   root: path2.resolve(import.meta.dirname, "client"),
   build: {
     outDir: path2.resolve(import.meta.dirname, "dist/public"),
-    emptyOutDir: true
+    emptyOutDir: true,
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          "react-vendor": ["react", "react-dom", "react-hook-form"],
+          "radix-ui": [
+            "@radix-ui/react-dialog",
+            "@radix-ui/react-tabs",
+            "@radix-ui/react-alert-dialog",
+            "@radix-ui/react-select",
+            "@radix-ui/react-popover",
+            "@radix-ui/react-dropdown-menu",
+            "@radix-ui/react-label",
+            "@radix-ui/react-slot"
+          ],
+          "gallery": ["lightgallery", "lg-zoom", "lg-thumbnail"],
+          "icons": ["lucide-react", "react-icons"]
+        }
+      }
+    },
+    chunkSizeWarningLimit: 1e3
   },
   server: {
     fs: {

@@ -1,12 +1,43 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import Busboy from 'busboy';
-import { uploadToCloudinary } from '../server/cloudinary.js';
+import FormData from 'form-data';
+import fetch from 'node-fetch';
 
 export const config = {
   api: {
     bodyParser: false,
   },
 };
+
+async function uploadToImgBB(buffer: Buffer, filename: string): Promise<string> {
+  const IMGBB_API_KEY = process.env.IMGBB_API_KEY;
+  
+  if (!IMGBB_API_KEY) {
+    throw new Error('IMGBB_API_KEY is not configured');
+  }
+
+  const formData = new FormData();
+  formData.append('image', buffer.toString('base64'));
+  formData.append('name', filename);
+
+  const response = await fetch(`https://api.imgbb.com/1/upload?key=${IMGBB_API_KEY}`, {
+    method: 'POST',
+    body: formData,
+  });
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    throw new Error(`ImgBB upload failed: ${errorText}`);
+  }
+
+  const data = await response.json() as any;
+  
+  if (!data.success) {
+    throw new Error('ImgBB upload failed: No success response');
+  }
+
+  return data.data.url;
+}
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   // CORS headers
@@ -59,22 +90,22 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       return res.status(400).json({ error: 'Only image uploads are allowed' });
     }
 
-    console.log('📁 Uploading to Cloudinary:', file.filename, `(${Math.round(file.buffer.length / 1024)}KB)`);
+    console.log('📁 Uploading to ImgBB:', file.filename, `(${Math.round(file.buffer.length / 1024)}KB)`);
 
-    // Upload to Cloudinary instead of local filesystem
-    const cloudinaryUrl = await uploadToCloudinary(file.buffer, file.filename);
+    // Upload to ImgBB
+    const imgbbUrl = await uploadToImgBB(file.buffer, file.filename);
     
-    console.log('✅ Cloudinary upload successful:', cloudinaryUrl);
+    console.log('✅ ImgBB upload successful:', imgbbUrl);
     
     return res.status(201).json({ 
-      url: cloudinaryUrl, 
-      pathname: cloudinaryUrl,
-      message: 'Image uploaded to cloud storage successfully' 
+      url: imgbbUrl, 
+      pathname: imgbbUrl,
+      message: 'Image uploaded to ImgBB successfully' 
     });
   } catch (error: any) {
     console.error('❌ Upload API error:', error);
     return res.status(500).json({ 
-      error: 'Failed to upload image to cloud storage', 
+      error: 'Failed to upload image', 
       details: String(error?.message || error) 
     });
   }

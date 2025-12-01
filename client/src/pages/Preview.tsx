@@ -19,6 +19,8 @@ export default function Preview() {
   const [, params] = useRoute("/preview/:shortCode");
   const shortCode = params?.shortCode || "";
 
+  console.log('🔍 Preview page loaded with shortCode:', shortCode);
+
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const [lightboxImages, setLightboxImages] = useState<{ src: string; thumb: string }[]>([]);
   const [lightboxIndex, setLightboxIndex] = useState(0);
@@ -26,9 +28,15 @@ export default function Preview() {
   const { data: shareLink, isLoading: shareLinkLoading, error: shareLinkError } = useQuery<ShareLink>({
     queryKey: ["/api/share-links", shortCode],
     queryFn: async () => {
+      console.log('🌐 Fetching share link for:', shortCode);
       const response = await fetch(`/api/share-links/${shortCode}`);
-      if (!response.ok) throw new Error("Share link not found");
-      return response.json();
+      if (!response.ok) {
+        console.error('❌ Share link fetch failed:', response.status);
+        throw new Error("Share link not found");
+      }
+      const data = await response.json();
+      console.log('✅ Share link data:', data);
+      return data;
     },
     enabled: !!shortCode,
   });
