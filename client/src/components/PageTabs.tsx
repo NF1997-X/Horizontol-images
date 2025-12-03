@@ -1,6 +1,8 @@
 import { Plus, MoreVertical, Copy, ExternalLink, Edit2, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
+import { useState } from "react";
+import { Input } from "@/components/ui/input";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -23,9 +25,33 @@ interface PageTabsProps {
   onDeletePage: (pageId: string) => void;
   onCopyLink: (pageId: string) => void;
   onOpenPreview: (pageId: string) => void;
+  onUpdatePage?: (pageId: string, name: string) => void;
 }
 
-export function PageTabs({ pages, activePage, onPageChange, onAddPage, onEditPage, onDeletePage, onCopyLink, onOpenPreview }: PageTabsProps) {
+export function PageTabs({ pages, activePage, onPageChange, onAddPage, onEditPage, onDeletePage, onCopyLink, onOpenPreview, onUpdatePage }: PageTabsProps) {
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editValue, setEditValue] = useState("");
+
+  const handleDoubleClick = (page: Page) => {
+    setEditingId(page.id);
+    setEditValue(page.name);
+  };
+
+  const handleSave = (pageId: string) => {
+    if (editValue.trim() && onUpdatePage) {
+      onUpdatePage(pageId, editValue.trim());
+    }
+    setEditingId(null);
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent, pageId: string) => {
+    if (e.key === 'Enter') {
+      handleSave(pageId);
+    } else if (e.key === 'Escape') {
+      setEditingId(null);
+    }
+  };
+
   return (
     <div className="border-b border-border bg-card">
       <div className="max-w-7xl mx-auto px-8 flex items-center gap-4">
@@ -33,15 +59,28 @@ export function PageTabs({ pages, activePage, onPageChange, onAddPage, onEditPag
           <div className="flex items-center gap-2 py-3">
             {pages.map((page) => (
               <div key={page.id} className="flex items-center gap-1 group">
-                <Button
-                  variant={activePage === page.id ? "secondary" : "ghost"}
-                  size="sm"
-                  onClick={() => onPageChange(page.id)}
-                  className="rounded-full px-6"
-                  data-testid={`tab-page-${page.id}`}
-                >
-                  {page.name}
-                </Button>
+                {editingId === page.id ? (
+                  <Input
+                    value={editValue}
+                    onChange={(e) => setEditValue(e.target.value)}
+                    onBlur={() => handleSave(page.id)}
+                    onKeyDown={(e) => handleKeyDown(e, page.id)}
+                    className="h-8 px-3 w-40"
+                    autoFocus
+                  />
+                ) : (
+                  <Button
+                    variant={activePage === page.id ? "secondary" : "ghost"}
+                    size="sm"
+                    onClick={() => onPageChange(page.id)}
+                    onDoubleClick={() => handleDoubleClick(page)}
+                    className="rounded-full px-6"
+                    data-testid={`tab-page-${page.id}`}
+                    title="Double-click to rename"
+                  >
+                    {page.name}
+                  </Button>
+                )}
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
                     <Button

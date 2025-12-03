@@ -11,7 +11,9 @@
     "db:push": "drizzle-kit push",
     "db:push:prod": "DATABASE_URL='postgresql://neondb_owner:npg_V9HXAN5dQJBw@ep-misty-haze-ahu4jh8e-pooler.c-3.us-east-1.aws.neon.tech/neondb?sslmode=require&channel_binding=require' drizzle-kit push",
     "db:seed": "tsx scripts/seed.ts",
-    "db:migrate-to-prod": "tsx scripts/migrate-to-prod.ts"
+    "db:seed:prod": "tsx scripts/seed-prod.ts",
+    "db:migrate-to-prod": "tsx scripts/migrate-to-prod.ts",
+    "db:check": "tsx scripts/check-db.ts"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.10.0",

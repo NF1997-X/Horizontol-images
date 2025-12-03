@@ -3,10 +3,10 @@ import { drizzle } from 'drizzle-orm/neon-http';
 import * as schema from '../shared/schema.js';
 
 // Dev database
-const DEV_URL = 'postgresql://neondb_owner:npg_V9HXAN5dQJBw@ep-little-bird-ahdea2hb-pooler.c-3.us-east-1.aws.neon.tech/neondb?sslmode=require&channel_binding=require';
+const DEV_URL = 'postgresql://neondb_owner:npg_V9HXAN5dQJBw@ep-little-bird-ahdea2hb-pooler.c-3.us-east-1.aws.neon.tech/neondb?sslmode=require';
 
 // Production database
-const PROD_URL = 'postgresql://neondb_owner:npg_V9HXAN5dQJBw@ep-misty-haze-ahu4jh8e-pooler.c-3.us-east-1.aws.neon.tech/neondb?sslmode=require&channel_binding=require';
+const PROD_URL = 'postgresql://neondb_owner:npg_V9HXAN5dQJBw@ep-misty-haze-ahu4jh8e-pooler.c-3.us-east-1.aws.neon.tech/neondb?sslmode=require';
 
 const devSql = neon(DEV_URL);
 const devDb = drizzle(devSql, { schema });

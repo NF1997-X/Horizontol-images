@@ -459,6 +459,7 @@ export default function Gallery() {
         onDeletePage={(pageId) => setDeletePageDialog({ open: true, pageId })}
         onCopyLink={handleCopyLink}
         onOpenPreview={handleOpenPreview}
+        onUpdatePage={(pageId, name) => updatePageMutation.mutate({ pageId, name })}
       />
 
       <main className="max-w-7xl mx-auto">
