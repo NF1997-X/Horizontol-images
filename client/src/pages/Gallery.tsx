@@ -121,11 +121,23 @@ export default function Gallery() {
 
   const createRowMutation = useMutation({
     mutationFn: async (title: string) => {
+      console.log('Creating row for page:', activePage, 'with title:', title);
       return apiRequest("/api/rows", "POST", { pageId: activePage, title });
     },
-    onSuccess: () => {
+    onSuccess: (newRow) => {
+      console.log('Row created successfully:', newRow);
       queryClient.invalidateQueries({ queryKey: ["/api/pages", activePage, "rows"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/rows"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/pages"] });
       toast({ title: "Row created successfully" });
+    },
+    onError: (error: any) => {
+      console.error('Failed to create row:', error);
+      toast({ 
+        title: "Failed to create row",
+        description: error?.message || "Please try again",
+        variant: "destructive" 
+      });
     },
   });
 
